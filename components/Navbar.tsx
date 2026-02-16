@@ -1,7 +1,10 @@
 
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 const Navbar: React.FC = () => {
+  const { language, setLanguage, messages, supportedLanguages } = useLanguage();
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 p-6 flex justify-between items-center luxury-blur bg-background-light/40 border-b border-primary/5">
       <div className="flex items-center space-x-2">
@@ -12,13 +15,35 @@ const Navbar: React.FC = () => {
       </div>
       
       <div className="hidden md:flex space-x-10 text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
-        <a href="#philosophy" className="hover:text-primary hover:opacity-100 transition-all cursor-pointer">Our Philosophy</a>
-        <a href="#nudges" className="hover:text-primary hover:opacity-100 transition-all cursor-pointer">The Nudge</a>
-        <a href="#" className="hover:text-primary hover:opacity-100 transition-all cursor-pointer">Safety</a>
+        <a href="#philosophy" className="hover:text-primary hover:opacity-100 transition-all cursor-pointer">{messages.navbar.philosophy}</a>
+        <a href="#nudges" className="hover:text-primary hover:opacity-100 transition-all cursor-pointer">{messages.navbar.nudge}</a>
+        <a href="#" className="hover:text-primary hover:opacity-100 transition-all cursor-pointer">{messages.navbar.safety}</a>
       </div>
       
-      <div className="md:hidden">
-        <span className="material-icons opacity-60">menu</span>
+      <div className="flex items-center space-x-4">
+        <div className="flex items-center text-[10px] font-bold uppercase tracking-[0.2em] opacity-70">
+          {supportedLanguages.map((code, index) => (
+            <React.Fragment key={code}>
+              <button
+                type="button"
+                onClick={() => setLanguage(code)}
+                className={`transition-all ${
+                  language === code ? 'text-primary opacity-100' : 'hover:text-primary hover:opacity-100'
+                }`}
+                aria-label={`Switch language to ${code.toUpperCase()}`}
+              >
+                {code.toUpperCase()}
+              </button>
+              {index < supportedLanguages.length - 1 ? (
+                <span className="mx-2 opacity-40">|</span>
+              ) : null}
+            </React.Fragment>
+          ))}
+        </div>
+
+        <div className="md:hidden">
+          <span className="material-icons opacity-60">menu</span>
+        </div>
       </div>
     </nav>
   );

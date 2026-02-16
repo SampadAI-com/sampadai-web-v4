@@ -9,6 +9,7 @@ import FinalCTA from './components/FinalCTA';
 import StickyFooter from './components/StickyFooter';
 import ScrollProgress from './components/ScrollProgress';
 import BackgroundShapes from './components/BackgroundShapes';
+import { LanguageProvider } from './context/LanguageContext';
 
 const App: React.FC = () => {
   const [activeSection, setActiveSection] = useState(0);
@@ -31,32 +32,34 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen">
-      <BackgroundShapes />
-      <Navbar />
-      <ScrollProgress activeIndex={activeSection} />
-      
-      <main>
-        <div id="hero">
-          <Hero />
-        </div>
-        <div id="philosophy">
-          <Philosophy />
-        </div>
-        <div id="nudges">
-          <Nudges />
-        </div>
-        <div id="calm">
-          <VisualCalm />
-        </div>
-        <div id="cta">
-          <FinalCTA />
-        </div>
-      </main>
+    <LanguageProvider>
+      <div className="relative min-h-screen">
+        <BackgroundShapes />
+        <Navbar />
+        <ScrollProgress activeIndex={activeSection} />
+        
+        <main>
+          <div id="hero">
+            <Hero />
+          </div>
+          <div id="philosophy">
+            <Philosophy />
+          </div>
+          <div id="nudges">
+            <Nudges />
+          </div>
+          <div id="calm">
+            <VisualCalm />
+          </div>
+          <div id="cta">
+            <FinalCTA />
+          </div>
+        </main>
 
-      <div className="h-40 md:h-20" /> {/* Spacer for footer */}
-      <StickyFooter />
-    </div>
+        <div className="h-40 md:h-20" /> {/* Spacer for footer */}
+        <StickyFooter />
+      </div>
+    </LanguageProvider>
   );
 };
 
