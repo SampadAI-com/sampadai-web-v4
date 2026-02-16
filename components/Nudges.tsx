@@ -10,7 +10,7 @@ const NudgeCard: React.FC<{
   accentColor: string;
   stats: { label: string; value: string; sub: string; primary?: boolean }[];
 }> = ({ badgePrefix, number, title, description, accentColor, stats }) => (
-  <div className="group relative bg-white p-10 md:p-12 rounded-2xl border border-primary/5 shadow-sm hover:shadow-2xl transition-all duration-700 overflow-hidden flex flex-col justify-between">
+  <div className="group relative bg-white p-6 md:p-12 rounded-2xl border border-primary/5 shadow-sm hover:shadow-2xl transition-all duration-700 overflow-hidden flex flex-col justify-between">
     <div className={`absolute top-0 left-0 w-2 h-full ${accentColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
     
     <div className="space-y-6">
@@ -21,11 +21,11 @@ const NudgeCard: React.FC<{
       <p className="text-lg opacity-60 leading-relaxed">{description}</p>
     </div>
 
-    <div className="pt-12 grid grid-cols-2 gap-4">
+    <div className="pt-8 md:pt-12 grid grid-cols-2 gap-4 max-[360px]:grid-cols-1">
       {stats.map((stat, idx) => (
         <div 
           key={idx} 
-          className={`p-6 rounded-xl transition-all duration-500 ${stat.primary ? 'bg-primary/5 border border-primary/10 group-hover:bg-primary/10' : 'bg-background-light group-hover:bg-background-light/80'}`}
+          className={`p-4 sm:p-6 rounded-xl transition-all duration-500 ${stat.primary ? 'bg-primary/5 border border-primary/10 group-hover:bg-primary/10' : 'bg-background-light group-hover:bg-background-light/80'}`}
         >
           <span className={`block text-[10px] uppercase font-bold tracking-widest mb-2 ${stat.primary ? 'text-primary/60' : 'opacity-40'}`}>
             {stat.label}
