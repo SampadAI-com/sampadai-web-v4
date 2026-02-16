@@ -60,11 +60,13 @@ const Navbar: React.FC = () => {
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 border-b border-primary/5 bg-background-light/40 px-4 py-4 luxury-blur sm:gap-4 sm:p-6">
         <div className="flex min-w-0 flex-1 items-center gap-2 md:flex-none">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/20">
-            <span className="text-lg font-bold leading-none text-white">S</span>
-          </div>
+          <img
+            src="/assets/logo/sampadai.png"
+            alt="SampadAI logo"
+            className="h-8 w-8 shrink-0 rounded-lg object-cover shadow-lg shadow-primary/20"
+          />
           <span className="max-w-[11rem] truncate text-lg font-extrabold leading-none tracking-tight text-charcoal sm:text-xl md:max-w-none">
-            Sampadai
+            SampadAI
           </span>
         </div>
 
@@ -151,9 +153,16 @@ const Navbar: React.FC = () => {
           }`}
         >
           <div className="mb-8 flex items-center justify-between">
-            <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-charcoal/70">
-              Navigation
-            </span>
+            <div className="flex items-center gap-2">
+              <img
+                src="/assets/logo/sampadai.png"
+                alt="SampadAI logo"
+                className="h-7 w-7 rounded-md object-cover shadow-md shadow-primary/10"
+              />
+              <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-charcoal/70">
+                Navigation
+              </span>
+            </div>
             <button
               type="button"
               aria-label="Close navigation menu"
