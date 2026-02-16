@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 export type Language = 'en' | 'de' | 'pl';
 
@@ -277,38 +277,111 @@ const isLanguage = (value: string | null): value is Language => {
   return value === 'en' || value === 'de' || value === 'pl';
 };
 
-const getInitialLanguage = (): Language => {
+type InitialLanguageState = {
+  language: Language;
+  hasStoredPreference: boolean;
+};
+
+const getInitialLanguageState = (): InitialLanguageState => {
   if (typeof window === 'undefined') {
-    return 'en';
+    return {
+      language: 'en',
+      hasStoredPreference: false,
+    };
   }
 
   try {
     const storedLanguage = window.localStorage.getItem(STORAGE_KEY);
-    return isLanguage(storedLanguage) ? storedLanguage : 'en';
+    if (isLanguage(storedLanguage)) {
+      return {
+        language: storedLanguage,
+        hasStoredPreference: true,
+      };
+    }
+
+    return {
+      language: 'en',
+      hasStoredPreference: false,
+    };
   } catch {
-    return 'en';
+    return {
+      language: 'en',
+      hasStoredPreference: false,
+    };
   }
 };
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
 export const LanguageProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>(getInitialLanguage);
+  const [initialLanguageState] = useState<InitialLanguageState>(getInitialLanguageState);
+  const [language, setLanguage] = useState<Language>(initialLanguageState.language);
+  const [isLanguageResolved, setIsLanguageResolved] = useState<boolean>(
+    initialLanguageState.hasStoredPreference
+  );
+  const hasUserSelectedLanguage = useRef(false);
+
+  const updateLanguage = (nextLanguage: Language) => {
+    hasUserSelectedLanguage.current = true;
+    setLanguage(nextLanguage);
+    setIsLanguageResolved(true);
+  };
+
+  useEffect(() => {
+    if (initialLanguageState.hasStoredPreference) {
+      setIsLanguageResolved(true);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const detectLanguageFromIP = async () => {
+      try {
+        const response = await fetch('/api/detect-language');
+        if (!response.ok) {
+          return;
+        }
+
+        const payload: { language?: string } = await response.json();
+        if (!isCancelled && !hasUserSelectedLanguage.current && isLanguage(payload.language ?? null)) {
+          setLanguage(payload.language);
+        }
+      } catch {
+        // Keep English fallback if language detection fails.
+      } finally {
+        if (!isCancelled) {
+          setIsLanguageResolved(true);
+        }
+      }
+    };
+
+    detectLanguageFromIP();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [initialLanguageState.hasStoredPreference]);
 
   useEffect(() => {
     document.documentElement.lang = language;
+  }, [language]);
+
+  useEffect(() => {
+    if (!isLanguageResolved) {
+      return;
+    }
 
     try {
       window.localStorage.setItem(STORAGE_KEY, language);
     } catch {
       // Ignore storage write failures (e.g. private mode restrictions).
     }
-  }, [language]);
+  }, [isLanguageResolved, language]);
 
   const value = useMemo(
     () => ({
       language,
-      setLanguage,
+      setLanguage: updateLanguage,
       messages: translations[language],
       supportedLanguages,
     }),
