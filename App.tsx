@@ -56,7 +56,7 @@ const App: React.FC = () => {
           </div>
         </main>
 
-        <div className="h-40 md:h-20" /> {/* Spacer for footer */}
+        <div className="h-56 sm:h-48 md:h-20" /> {/* Spacer for footer */}
         <StickyFooter />
       </div>
     </LanguageProvider>
