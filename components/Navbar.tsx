@@ -7,10 +7,6 @@ const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (!isMobileMenuOpen) {
-      return undefined;
-    }
-
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsMobileMenuOpen(false);
@@ -30,6 +26,20 @@ const Navbar: React.FC = () => {
       window.removeEventListener('keydown', handleEscape);
       window.removeEventListener('resize', handleResize);
     };
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      document.body.style.overflow = '';
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, [isMobileMenuOpen]);
 
   const toggleMobileMenu = () => {
@@ -40,17 +50,14 @@ const Navbar: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const navLinks = [
+    { href: '#philosophy', label: messages.navbar.philosophy },
+    { href: '#nudges', label: messages.navbar.nudge },
+    { href: '#', label: messages.navbar.safety },
+  ];
+
   return (
     <>
-      {isMobileMenuOpen ? (
-        <button
-          type="button"
-          aria-label="Close navigation menu"
-          onClick={closeMobileMenu}
-          className="fixed inset-0 z-40 bg-charcoal/15 md:hidden"
-        />
-      ) : null}
-
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 border-b border-primary/5 bg-background-light/40 px-4 py-4 luxury-blur sm:gap-4 sm:p-6">
         <div className="flex min-w-0 flex-1 items-center gap-2 md:flex-none">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/20">
@@ -62,22 +69,19 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="hidden md:flex flex-1 justify-center space-x-10 text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
-          <a
-            href="#philosophy"
-            className="hover:text-primary hover:opacity-100 transition-all cursor-pointer"
-          >
-            {messages.navbar.philosophy}
-          </a>
-          <a href="#nudges" className="hover:text-primary hover:opacity-100 transition-all cursor-pointer">
-            {messages.navbar.nudge}
-          </a>
-          <a href="#" className="hover:text-primary hover:opacity-100 transition-all cursor-pointer">
-            {messages.navbar.safety}
-          </a>
+          {navLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="hover:text-primary hover:opacity-100 transition-all cursor-pointer"
+            >
+              {link.label}
+            </a>
+          ))}
         </div>
 
-        <div className="relative flex shrink-0 items-center gap-2.5 sm:gap-4">
-          <div className="flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.16em] leading-none opacity-70 sm:tracking-[0.2em]">
+        <div className="flex shrink-0 items-center gap-2.5 sm:gap-4">
+          <div className="hidden sm:flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.16em] leading-none opacity-70 sm:tracking-[0.2em]">
             {supportedLanguages.map((code, index) => (
               <React.Fragment key={code}>
                 <button
@@ -105,7 +109,57 @@ const Navbar: React.FC = () => {
             onClick={toggleMobileMenu}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full text-charcoal/70 transition-colors hover:bg-primary/10 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 md:hidden"
           >
-            {isMobileMenuOpen ? (
+            <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+              {isMobileMenuOpen ? (
+                <path
+                  d="M6 6L18 18M18 6L6 18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              ) : (
+                <path
+                  d="M4 7H20M4 12H20M4 17H20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              )}
+            </svg>
+          </button>
+        </div>
+      </nav>
+
+      <div
+        className={`fixed inset-0 z-[60] md:hidden transition-opacity duration-200 ${
+          isMobileMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          onClick={closeMobileMenu}
+          className="absolute inset-0 bg-charcoal/30"
+        />
+
+        <aside
+          id="mobile-navigation"
+          className={`absolute right-0 top-0 h-full w-[min(84vw,20rem)] border-l border-primary/10 bg-background-light p-6 shadow-2xl transition-transform duration-200 ${
+            isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="mb-8 flex items-center justify-between">
+            <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-charcoal/70">
+              Navigation
+            </span>
+            <button
+              type="button"
+              aria-label="Close navigation menu"
+              onClick={closeMobileMenu}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-charcoal/70 transition-colors hover:bg-primary/10 hover:text-primary"
+            >
               <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
                 <path
                   d="M6 6L18 18M18 6L6 18"
@@ -115,53 +169,45 @@ const Navbar: React.FC = () => {
                   strokeLinecap="round"
                 />
               </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-                <path
-                  d="M4 7H20M4 12H20M4 17H20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            )}
-          </button>
+            </button>
+          </div>
 
-          <div
-            id="mobile-navigation"
-            className={`absolute right-0 top-[calc(100%+0.75rem)] w-56 rounded-2xl border border-primary/10 bg-background-light/95 p-4 shadow-xl transition-all duration-200 md:hidden ${
-              isMobileMenuOpen
-                ? 'pointer-events-auto translate-y-0 opacity-100'
-                : 'pointer-events-none -translate-y-2 opacity-0'
-            }`}
-          >
-            <div className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-[0.14em] text-charcoal/80">
+          <div className="flex flex-col gap-2 text-sm font-bold uppercase tracking-[0.14em] text-charcoal/80">
+            {navLinks.map((link) => (
               <a
-                href="#philosophy"
+                key={link.label}
+                href={link.href}
                 onClick={closeMobileMenu}
-                className="rounded-lg px-2 py-1.5 transition-colors hover:bg-primary/10 hover:text-primary"
+                className="rounded-lg px-3 py-2.5 transition-colors hover:bg-primary/10 hover:text-primary"
               >
-                {messages.navbar.philosophy}
+                {link.label}
               </a>
-              <a
-                href="#nudges"
-                onClick={closeMobileMenu}
-                className="rounded-lg px-2 py-1.5 transition-colors hover:bg-primary/10 hover:text-primary"
-              >
-                {messages.navbar.nudge}
-              </a>
-              <a
-                href="#"
-                onClick={closeMobileMenu}
-                className="rounded-lg px-2 py-1.5 transition-colors hover:bg-primary/10 hover:text-primary"
-              >
-                {messages.navbar.safety}
-              </a>
+            ))}
+          </div>
+
+          <div className="mt-8 border-t border-primary/10 pt-6">
+            <div className="flex items-center gap-2">
+              {supportedLanguages.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => {
+                    setLanguage(code);
+                    closeMobileMenu();
+                  }}
+                  className={`rounded-lg border px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] transition-colors ${
+                    language === code
+                      ? 'border-primary/40 bg-primary/10 text-primary'
+                      : 'border-primary/10 text-charcoal/70 hover:border-primary/30 hover:text-primary'
+                  }`}
+                >
+                  {code.toUpperCase()}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
-      </nav>
+        </aside>
+      </div>
     </>
   );
 };
