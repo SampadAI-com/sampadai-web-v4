@@ -6,12 +6,14 @@ const Navbar: React.FC = () => {
   const { language, setLanguage, messages, supportedLanguages } = useLanguage();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-4 sm:p-6 flex items-center gap-4 luxury-blur bg-background-light/40 border-b border-primary/5">
-      <div className="flex items-center space-x-2 shrink-0">
-        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-          <span className="text-white font-bold text-lg">S</span>
+    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 border-b border-primary/5 bg-background-light/40 px-4 py-4 luxury-blur sm:gap-4 sm:p-6">
+      <div className="flex min-w-0 flex-1 items-center gap-2 md:flex-none">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/20">
+          <span className="text-lg font-bold leading-none text-white">S</span>
         </div>
-        <span className="text-xl font-extrabold tracking-tight text-charcoal">Sampadai</span>
+        <span className="max-w-[11rem] truncate text-lg font-extrabold leading-none tracking-tight text-charcoal sm:text-xl md:max-w-none">
+          Sampadai
+        </span>
       </div>
       
       <div className="hidden md:flex flex-1 justify-center space-x-10 text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
@@ -20,14 +22,14 @@ const Navbar: React.FC = () => {
         <a href="#" className="hover:text-primary hover:opacity-100 transition-all cursor-pointer">{messages.navbar.safety}</a>
       </div>
       
-      <div className="ml-auto flex items-center space-x-2 sm:space-x-4 shrink-0">
-        <div className="flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.2em] opacity-70">
+      <div className="flex shrink-0 items-center gap-2.5 sm:gap-4">
+        <div className="flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.16em] leading-none opacity-70 sm:tracking-[0.2em]">
           {supportedLanguages.map((code, index) => (
             <React.Fragment key={code}>
               <button
                 type="button"
                 onClick={() => setLanguage(code)}
-                className={`transition-all ${
+                className={`inline-flex items-center leading-none transition-all ${
                   language === code ? 'text-primary opacity-100' : 'hover:text-primary hover:opacity-100'
                 }`}
                 aria-label={`Switch language to ${code.toUpperCase()}`}
@@ -35,15 +37,19 @@ const Navbar: React.FC = () => {
                 {code.toUpperCase()}
               </button>
               {index < supportedLanguages.length - 1 ? (
-                <span className="mx-1.5 sm:mx-2 opacity-40">|</span>
+                <span className="mx-1.5 inline-flex items-center leading-none opacity-40 sm:mx-2">|</span>
               ) : null}
             </React.Fragment>
           ))}
         </div>
 
-        <div className="md:hidden">
-          <span className="material-icons opacity-60">menu</span>
-        </div>
+        <button
+          type="button"
+          aria-label="Open navigation menu"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-charcoal/70 transition-colors hover:bg-primary/10 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 md:hidden"
+        >
+          <span className="material-icons text-[20px] leading-none">menu</span>
+        </button>
       </div>
     </nav>
   );
