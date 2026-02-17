@@ -47,7 +47,7 @@ const Nudges: React.FC = () => {
   const { nudges } = messages;
 
   return (
-    <section className="min-h-screen flex flex-col items-center justify-center px-6 py-32 bg-primary/[0.01]">
+    <section className="flex flex-col items-center justify-center bg-primary/[0.01] px-4 py-14 sm:px-6 sm:py-20 md:py-28 lg:min-h-screen">
       <div className="max-w-7xl w-full grid lg:grid-cols-2 gap-10">
         <NudgeCard 
           badgePrefix={nudges.badgePrefix}
