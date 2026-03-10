@@ -54,8 +54,29 @@ type TranslationContent = {
     membershipLabel: string;
     membershipValue: string;
     quote: string;
-    emailPlaceholder: string;
-    waitlistButton: string;
+    countryLabel: string;
+    countryPlaceholder: string;
+    bankLabel: string;
+    bankPlaceholder: string;
+    bankLoading: string;
+    bankFallback: string;
+    amountLabel: string;
+    amountPlaceholder: string;
+    amountHelper: string;
+    leakButton: string;
+    collapseButton: string;
+    addBankButton: string;
+    removeBankButton: string;
+    leakOverlayTitle: string;
+    leakOverlayLow: string;
+    leakOverlayModerate: string;
+    leakOverlayHigh: string;
+    leakOverlayVeryHigh: string;
+    leakOverlayCritical: string;
+    leakTitle: string;
+    leakDescription: string;
+    leakResultLabel: string;
+    leakFallback: string;
   };
 };
 
@@ -133,8 +154,30 @@ const translations: Record<Language, TranslationContent> = {
       membershipLabel: 'Current Membership',
       membershipValue: 'Limited Invitations Remaining',
       quote: '"The Headspace for your financial life."',
-      emailPlaceholder: 'Email address',
-      waitlistButton: 'Join the Waitlist',
+      countryLabel: 'Country',
+      countryPlaceholder: 'Select country',
+      bankLabel: 'Bank',
+      bankPlaceholder: 'Select bank',
+      bankLoading: 'Loading banks...',
+      bankFallback: 'Showing default banks',
+      amountLabel: 'Amount held',
+      amountPlaceholder: 'Enter amount',
+      amountHelper: 'We use this to estimate your leak.',
+      leakButton: 'Reveal your leak',
+      collapseButton: 'Hide details',
+      addBankButton: 'Add another bank',
+      removeBankButton: 'Remove',
+      leakOverlayTitle: 'Leak Score',
+      leakOverlayLow: 'Low Leak',
+      leakOverlayModerate: 'Moderate Leak',
+      leakOverlayHigh: 'High Leak',
+      leakOverlayVeryHigh: 'Very High Leak',
+      leakOverlayCritical: 'Critical Leak',
+      leakTitle: 'Your Leak',
+      leakDescription:
+        'A first look at what inflation and idle cash could be costing you each year.',
+      leakResultLabel: 'Estimated annual leak',
+      leakFallback: 'Leak insight will appear here once the data is connected.',
     },
   },
   de: {
@@ -200,8 +243,30 @@ const translations: Record<Language, TranslationContent> = {
       membershipLabel: 'Aktuelle Mitgliedschaft',
       membershipValue: 'Nur noch begrenzte Einladungen',
       quote: '"Der mentale Freiraum für dein Finanzleben."',
-      emailPlaceholder: 'E-Mail-Adresse',
-      waitlistButton: 'Zur Warteliste',
+      countryLabel: 'Land',
+      countryPlaceholder: 'Land auswählen',
+      bankLabel: 'Bank',
+      bankPlaceholder: 'Bank auswählen',
+      bankLoading: 'Banken werden geladen...',
+      bankFallback: 'Standardbanken werden angezeigt',
+      amountLabel: 'Guthaben',
+      amountPlaceholder: 'Betrag eingeben',
+      amountHelper: 'Wir nutzen das zur Schätzung deines Lecks.',
+      leakButton: 'Dein Leck anzeigen',
+      collapseButton: 'Details ausblenden',
+      addBankButton: 'Weitere Bank hinzufügen',
+      removeBankButton: 'Entfernen',
+      leakOverlayTitle: 'Leak-Score',
+      leakOverlayLow: 'Geringes Leck',
+      leakOverlayModerate: 'Mittleres Leck',
+      leakOverlayHigh: 'Hohes Leck',
+      leakOverlayVeryHigh: 'Sehr hohes Leck',
+      leakOverlayCritical: 'Kritisches Leck',
+      leakTitle: 'Dein Leck',
+      leakDescription:
+        'Ein erster Blick darauf, was Inflation und ungenutztes Geld dich pro Jahr kosten könnten.',
+      leakResultLabel: 'Geschätztes jährliches Leck',
+      leakFallback: 'Sobald die Daten verbunden sind, erscheint hier dein Leak.',
     },
   },
   pl: {
@@ -267,8 +332,30 @@ const translations: Record<Language, TranslationContent> = {
       membershipLabel: 'Obecne członkostwo',
       membershipValue: 'Pozostała ograniczona liczba zaproszeń',
       quote: '"Przestrzeń dla Twojego życia finansowego."',
-      emailPlaceholder: 'Adres e-mail',
-      waitlistButton: 'Dołącz do listy oczekujących',
+      countryLabel: 'Kraj',
+      countryPlaceholder: 'Wybierz kraj',
+      bankLabel: 'Bank',
+      bankPlaceholder: 'Wybierz bank',
+      bankLoading: 'Ładowanie banków...',
+      bankFallback: 'Używamy domyślnych banków',
+      amountLabel: 'Posiadana kwota',
+      amountPlaceholder: 'Wpisz kwotę',
+      amountHelper: 'Używamy tego do oszacowania Twojego wycieku.',
+      leakButton: 'Pokaż wyciek',
+      collapseButton: 'Ukryj szczegóły',
+      addBankButton: 'Dodaj kolejny bank',
+      removeBankButton: 'Usuń',
+      leakOverlayTitle: 'Wynik wycieku',
+      leakOverlayLow: 'Niski wyciek',
+      leakOverlayModerate: 'Umiarkowany wyciek',
+      leakOverlayHigh: 'Wysoki wyciek',
+      leakOverlayVeryHigh: 'Bardzo wysoki wyciek',
+      leakOverlayCritical: 'Krytyczny wyciek',
+      leakTitle: 'Twój wyciek',
+      leakDescription:
+        'Pierwsze spojrzenie na to, ile rocznie może kosztować Cię inflacja i niepracująca gotówka.',
+      leakResultLabel: 'Szacowany roczny wyciek',
+      leakFallback: 'Gdy dane będą podłączone, tutaj pojawi się Twój wyciek.',
     },
   },
 };

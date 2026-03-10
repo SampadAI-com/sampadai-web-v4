@@ -1,1 +1,32 @@
 /* Intentionally minimal; Tailwind CDN utilities are configured in index.html. */
+
+@media (min-width: 640px) {
+  .amount-input {
+    padding-left: 2.5rem !important;
+  }
+}
+
+.amount-input {
+  padding-left: 2.25rem !important;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -10%;
+  border-radius: 2px;
+  animation-name: confetti-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, top;
+}
+
+@keyframes confetti-fall {
+  0% {
+    top: -10%;
+    transform: rotate(0deg);
+  }
+  100% {
+    top: 110%;
+    transform: rotate(720deg);
+  }
+}
