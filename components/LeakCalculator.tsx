@@ -917,9 +917,9 @@ const LeakCalculator: React.FC = () => {
                         </div>
                       )}
 
-                      <div className="flex gap-4 items-start sm:items-center">
+                      <div className="grid grid-cols-[52px_1fr_46px] sm:flex sm:flex-row gap-3 sm:gap-4 items-start sm:items-center w-full">
                         {/* Bank logo / avatar */}
-                        <div className="leak-bank-logo shrink-0">
+                        <div className={`leak-bank-logo shrink-0 col-start-1 row-span-2 place-self-start sm:place-self-auto ${index === 0 ? 'mt-[22px] sm:mt-0' : ''}`}>
                           {isFetchingBanks || isFetchingLogos ? (
                             <div className="leak-shimmer h-full w-full rounded-2xl" />
                           ) : logoUrl ? (
@@ -944,73 +944,68 @@ const LeakCalculator: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Inputs Container */}
-                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row gap-3">
-                          {/* Bank select */}
-                          <div className="flex-1 min-w-0">
-                            {/* Mobile-only label */}
-                            {index === 0 && (
-                              <span className={`sm:hidden ${labelClass} block mb-1.5`}>
-                                {stickyFooter.bankLabel}
-                              </span>
-                            )}
-                            <select
-                              className={`${controlClass} flex-1`}
-                              value={entry.bankId}
-                              onChange={(event) => updateBankEntry(entry.id, { bankId: event.target.value })}
-                              disabled={!country || isSubmitting}
-                            >
-                              <option value="">{stickyFooter.bankPlaceholder}</option>
-                              {banks.map((bank) => {
-                                const isSelectedElsewhere = bankEntries.some(
-                                  (other) => other.id !== entry.id && other.bankId === bank.id
-                                );
-                                return (
-                                  <option key={bank.id} value={bank.id} disabled={isSelectedElsewhere}>
-                                    {bank.name}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          </div>
+                        {/* Bank select */}
+                        <div className="col-start-2 col-span-2 sm:col-span-1 sm:flex-1 min-w-0 w-full">
+                          {index === 0 && (
+                            <span className={`sm:hidden ${labelClass} block mb-1.5`}>
+                              {stickyFooter.bankLabel}
+                            </span>
+                          )}
+                          <select
+                            className={`${controlClass} flex-1`}
+                            value={entry.bankId}
+                            onChange={(event) => updateBankEntry(entry.id, { bankId: event.target.value })}
+                            disabled={!country || isSubmitting}
+                          >
+                            <option value="">{stickyFooter.bankPlaceholder}</option>
+                            {banks.map((bank) => {
+                              const isSelectedElsewhere = bankEntries.some(
+                                (other) => other.id !== entry.id && other.bankId === bank.id
+                              );
+                              return (
+                                <option key={bank.id} value={bank.id} disabled={isSelectedElsewhere}>
+                                  {bank.name}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
 
-                          {/* Amount input */}
-                          <div className="flex-1 min-w-0">
-                            {/* Mobile-only label */}
-                            {index === 0 && (
-                              <span className={`sm:hidden ${labelClass} block mb-1.5`}>
-                                {stickyFooter.amountLabel}
+                        {/* Amount input */}
+                        <div className="col-start-2 col-span-1 sm:flex-1 min-w-0 w-full">
+                          {index === 0 && (
+                            <span className={`sm:hidden ${labelClass} block mb-1.5 mt-1 sm:mt-0`}>
+                              {stickyFooter.amountLabel}
+                            </span>
+                          )}
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-primary/60">
+                              {currency ? currency.symbol : '€'}
+                            </span>
+                            <input
+                              className={`${controlClass} pr-14 amount-input`}
+                              placeholder={stickyFooter.amountPlaceholder}
+                              type="text"
+                              inputMode="decimal"
+                              value={entry.amount}
+                              onChange={(event) => {
+                                const raw = event.target.value;
+                                // Allow only digits, dots, and commas (for EU formatting)
+                                const filtered = raw.replace(/[^0-9.,]/g, '');
+                                updateBankEntry(entry.id, { amount: filtered });
+                              }}
+                              disabled={!entry.bankId || isSubmitting}
+                            />
+                            {currency ? (
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-primary/60">
+                                {currency.code}
                               </span>
-                            )}
-                            <div className="relative">
-                              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-primary/60">
-                                {currency ? currency.symbol : '€'}
-                              </span>
-                              <input
-                                className={`${controlClass} pr-14 amount-input`}
-                                placeholder={stickyFooter.amountPlaceholder}
-                                type="text"
-                                inputMode="decimal"
-                                value={entry.amount}
-                                onChange={(event) => {
-                                  const raw = event.target.value;
-                                  // Allow only digits, dots, and commas (for EU formatting)
-                                  const filtered = raw.replace(/[^0-9.,]/g, '');
-                                  updateBankEntry(entry.id, { amount: filtered });
-                                }}
-                                disabled={!entry.bankId || isSubmitting}
-                              />
-                              {currency ? (
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-primary/60">
-                                  {currency.code}
-                                </span>
-                              ) : null}
-                            </div>
+                            ) : null}
                           </div>
                         </div>
 
                         {/* Remove button */}
-                        <div className={index === 0 ? "self-end sm:self-center" : "self-center"}>
+                        <div className="col-start-3 row-start-2 self-end sm:self-center">
                           <button
                             type="button"
                             onClick={() => removeBankEntry(entry.id)}
