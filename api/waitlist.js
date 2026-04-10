@@ -99,7 +99,7 @@ export default async function handler(req, res) {
     if (resendApiKey) {
       try {
         const resend = new Resend(resendApiKey);
-        const { data, error } = await resend.emails.send({
+        const welcomeEmailPromise = resend.emails.send({
           from: 'onboarding@resend.dev',
           to: email,
           subject: "You're on the list! 🚀",
@@ -129,11 +129,35 @@ export default async function handler(req, res) {
 </body>
 </html>`,
         });
+
+        const adminNotificationPromise = resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: ['the.art.of.amazement@gmail.com', 'volosach.lera@gmail.com', 'saurabh.friday@gmail.com'],
+          subject: `🎉 New Waitlist Signup: ${email}`,
+          html: `
+            <div style="font-family: sans-serif; color: #333;">
+              <h2>New Waitlist Entry!</h2>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Time:</strong> ${new Date().toISOString()}</p>
+            </div>
+          `,
+        });
+
+        const [welcomeResult, adminResult] = await Promise.all([
+          welcomeEmailPromise,
+          adminNotificationPromise,
+        ]);
         
-        if (error) {
-          console.warn('Waitlist success, but Resend API returned an error:', error);
+        if (welcomeResult.error) {
+          console.warn('Welcome email failed:', welcomeResult.error);
         } else {
           console.log('Successfully sent welcome email to:', email);
+        }
+
+        if (adminResult.error) {
+          console.warn('Admin notification email failed:', adminResult.error);
+        } else {
+          console.log('Successfully sent admin notification email.');
         }
       } catch (emailError) {
         console.warn('Waitlist success, but internal error occurred sending email:', emailError);
