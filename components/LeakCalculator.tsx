@@ -84,7 +84,7 @@ const INSURANCE_LIMITS: Record<CountryCode, { limit: number; currency: string }>
   DE: { limit: 100000, currency: 'EUR' },
   ES: { limit: 100000, currency: 'EUR' },
   PL: { limit: 100000, currency: 'EUR' },
-  GB: { limit: 85000, currency: 'GBP' },
+  GB: { limit: 120000, currency: 'GBP' },
   US: { limit: 250000, currency: 'USD' },
 };
 
@@ -402,6 +402,7 @@ const LeakCalculator: React.FC = () => {
     currencyCode: string;
     isOverLimit: boolean;
   } | null>(null);
+  const [hoveredYear, setHoveredYear] = useState<number | null>(null);
   const cardRef = React.useRef<HTMLDivElement>(null);
 
   // Animate score counter when leakScore changes
@@ -667,8 +668,6 @@ const LeakCalculator: React.FC = () => {
           throw new Error('Could not fetch rates');
         }
 
-        const maxRate = Math.max(...ratesData.map(r => r.interest_rate || r.rate || 0), 0.01);
-        
         let totalAmount = 0;
         let weightedYield = 0;
         let overLimitAmount = 0;
@@ -692,6 +691,35 @@ const LeakCalculator: React.FC = () => {
         });
 
         const userAvgRate = totalAmount > 0 ? (weightedYield / totalAmount) : 0;
+
+        // Calculate Optimal Yield respecting insurance limits
+        const sortedRates = [...ratesData].sort((a, b) => {
+          const rateA = a.interest_rate || a.rate || 0;
+          const rateB = b.interest_rate || b.rate || 0;
+          return rateB - rateA;
+        });
+
+        let remainingToAllocate = totalAmount;
+        let optimalYield = 0;
+
+        for (const bank of sortedRates) {
+          if (remainingToAllocate <= 0) break;
+          const rate = bank.interest_rate || bank.rate || 0;
+          const allocation = Math.min(remainingToAllocate, limitInfo.limit);
+          optimalYield += (rate * allocation);
+          remainingToAllocate -= allocation;
+        }
+
+        if (remainingToAllocate > 0 && sortedRates.length > 0) {
+          // If we maxed out all banks, put remainder in the highest yielding one
+          const bestRate = sortedRates[0].interest_rate || sortedRates[0].rate || 0;
+          optimalYield += (bestRate * remainingToAllocate);
+        }
+
+        const maxRate = totalAmount > 0 
+          ? (optimalYield / totalAmount) 
+          : Math.max(...ratesData.map(r => r.interest_rate || r.rate || 0), 0.01);
+          
         annualLeak = (maxRate - userAvgRate) * (totalAmount / 100);
 
         const yieldEfficiency = maxRate > 0 ? (userAvgRate / maxRate) : 0;
@@ -1105,66 +1133,257 @@ const LeakCalculator: React.FC = () => {
                     {/* Divider */}
                     <div className="border-t border-primary/8" />
 
-                    {/* Projection Graph — 1yr & 5yr */}
+                    {/* Interactive Line Graph — 5yr Projection */}
                     {leakData.totalAmount > 0 && (() => {
-                      const currentReturn1yr = leakData.totalAmount * (leakData.userAvgRate / 100);
-                      const optimalReturn1yr = leakData.totalAmount * (leakData.maxRate / 100);
-                      const currentReturn5yr = leakData.totalAmount * Math.pow(1 + leakData.userAvgRate / 100, 5) - leakData.totalAmount;
-                      const optimalReturn5yr = leakData.totalAmount * Math.pow(1 + leakData.maxRate / 100, 5) - leakData.totalAmount;
-
-                      const BarPair = ({ label, current, optimal, maxScale }: { label: string; current: number; optimal: number; maxScale: number }) => (
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-semibold text-charcoal/70">{label}</span>
-                            <span className="text-[10px] font-bold tabular-nums text-orange-500">
-                              -{formatCurrencyValue(Math.max(optimal - current, 0), leakData.currencyCode, language)} missed
-                            </span>
-                          </div>
-                          {/* Best available */}
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[9px] w-10 text-right text-primary/50 font-semibold shrink-0">Best</span>
-                            <div className="flex-1 h-5 rounded-lg bg-primary/5 overflow-hidden relative">
-                              <div 
-                                className="h-full rounded-lg leak-bar-animate"
-                                style={{ 
-                                  width: `${Math.max((optimal / maxScale) * 100, 3)}%`,
-                                  background: 'linear-gradient(90deg, #1dc96a, #17a356)',
-                                }}
-                              />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-charcoal/70 tabular-nums">
-                                {formatCurrencyValue(optimal, leakData.currencyCode, language)}
-                              </span>
-                            </div>
-                          </div>
-                          {/* Your rate */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] w-10 text-right text-primary/50 font-semibold shrink-0">Yours</span>
-                            <div className="flex-1 h-5 rounded-lg bg-primary/5 overflow-hidden relative">
-                              <div 
-                                className="h-full rounded-lg leak-bar-animate"
-                                style={{ 
-                                  width: `${Math.max((current / maxScale) * 100, 3)}%`,
-                                  background: 'linear-gradient(90deg, #f39c12, #e67e22)',
-                                  animationDelay: '0.15s',
-                                }}
-                              />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-charcoal/70 tabular-nums">
-                                {formatCurrencyValue(current, leakData.currencyCode, language)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-
-                      const maxVal = Math.max(optimalReturn1yr, optimalReturn5yr, 1);
-
+                      // Compute compound growth for years 0-5
+                      const years = [0, 1, 2, 3, 4, 5];
+                      const userGrowth = years.map(y => leakData.totalAmount * Math.pow(1 + leakData.userAvgRate / 100, y));
+                      const bestGrowth = years.map(y => leakData.totalAmount * Math.pow(1 + leakData.maxRate / 100, y));
+                      
+                      const allValues = [...userGrowth, ...bestGrowth];
+                      const minVal = Math.min(...allValues);
+                      const maxVal = Math.max(...allValues);
+                      const valueRange = maxVal - minVal || 1;
+                      
+                      // SVG dimensions
+                      const W = 460;
+                      const H = 200;
+                      const padL = 10;
+                      const padR = 10;
+                      const padT = 20;
+                      const padB = 30;
+                      const chartW = W - padL - padR;
+                      const chartH = H - padT - padB;
+                      
+                      const toX = (year: number) => padL + (year / 5) * chartW;
+                      const toY = (val: number) => padT + chartH - ((val - minVal) / valueRange) * chartH;
+                      
+                      // Build smooth SVG path using monotone cubic interpolation
+                      const buildSmoothPath = (values: number[]): string => {
+                        const points = values.map((v, i) => ({ x: toX(i), y: toY(v) }));
+                        if (points.length < 2) return '';
+                        
+                        let d = `M ${points[0].x},${points[0].y}`;
+                        for (let i = 0; i < points.length - 1; i++) {
+                          const p0 = points[Math.max(0, i - 1)];
+                          const p1 = points[i];
+                          const p2 = points[i + 1];
+                          const p3 = points[Math.min(points.length - 1, i + 2)];
+                          
+                          const cp1x = p1.x + (p2.x - p0.x) / 6;
+                          const cp1y = p1.y + (p2.y - p0.y) / 6;
+                          const cp2x = p2.x - (p3.x - p1.x) / 6;
+                          const cp2y = p2.y - (p3.y - p1.y) / 6;
+                          
+                          d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+                        }
+                        return d;
+                      };
+                      
+                      const bestPath = buildSmoothPath(bestGrowth);
+                      const userPath = buildSmoothPath(userGrowth);
+                      
+                      // Build the filled gap area between the two curves
+                      const bestPointsForward = years.map((_, i) => `${toX(i)},${toY(bestGrowth[i])}`);
+                      const userPointsReverse = [...years].reverse().map((_, ri) => {
+                        const i = years.length - 1 - ri;
+                        return `${toX(i)},${toY(userGrowth[i])}`;
+                      });
+                      const gapAreaPath = `M ${bestPointsForward.join(' L ')} L ${userPointsReverse.join(' L ')} Z`;
+                      
+                      // Format values for tooltip
+                      const hYear = hoveredYear ?? 5;
+                      const hBest = bestGrowth[hYear];
+                      const hUser = userGrowth[hYear];
+                      const hDiff = hBest - hUser;
+                      
                       return (
                         <div>
-                          <p className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-bold mb-3">Money Left on Table</p>
-                          <div className="flex flex-col gap-4">
-                            <BarPair label="1 Year" current={currentReturn1yr} optimal={optimalReturn1yr} maxScale={maxVal} />
-                            <div className="border-t border-primary/8" />
-                            <BarPair label="5 Years (compounded)" current={currentReturn5yr} optimal={optimalReturn5yr} maxScale={Math.max(optimalReturn5yr, 1)} />
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-bold">5-Year Growth Projection</p>
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center gap-1">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#1dc96a' }} />
+                                <span className="text-[9px] text-primary/50 font-semibold">Best</span>
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#f39c12' }} />
+                                <span className="text-[9px] text-primary/50 font-semibold">Yours</span>
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="relative">
+                            <svg
+                              viewBox={`0 0 ${W} ${H}`}
+                              className="w-full h-auto"
+                              style={{ overflow: 'visible' }}
+                              onMouseLeave={() => setHoveredYear(null)}
+                            >
+                              {/* Grid lines */}
+                              {years.map(y => (
+                                <line
+                                  key={`grid-${y}`}
+                                  x1={toX(y)} y1={padT}
+                                  x2={toX(y)} y2={padT + chartH}
+                                  stroke="rgba(29,201,106,0.06)"
+                                  strokeWidth="1"
+                                />
+                              ))}
+                              {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => (
+                                <line
+                                  key={`hgrid-${i}`}
+                                  x1={padL} y1={padT + chartH * (1 - frac)}
+                                  x2={padL + chartW} y2={padT + chartH * (1 - frac)}
+                                  stroke="rgba(29,201,106,0.05)"
+                                  strokeWidth="1"
+                                />
+                              ))}
+                              
+                              {/* Gap area fill */}
+                              <path
+                                d={gapAreaPath}
+                                fill="url(#leakGapGradient)"
+                                opacity="0.35"
+                              />
+                              
+                              {/* Gradient definition */}
+                              <defs>
+                                <linearGradient id="leakGapGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#1dc96a" stopOpacity="0.3" />
+                                  <stop offset="100%" stopColor="#f39c12" stopOpacity="0.05" />
+                                </linearGradient>
+                                <linearGradient id="bestLineGrad" x1="0" y1="0" x2="1" y2="0">
+                                  <stop offset="0%" stopColor="#1dc96a" />
+                                  <stop offset="100%" stopColor="#17a356" />
+                                </linearGradient>
+                                <linearGradient id="userLineGrad" x1="0" y1="0" x2="1" y2="0">
+                                  <stop offset="0%" stopColor="#f39c12" />
+                                  <stop offset="100%" stopColor="#e67e22" />
+                                </linearGradient>
+                              </defs>
+                              
+                              {/* Best rate line */}
+                              <path
+                                d={bestPath}
+                                fill="none"
+                                stroke="url(#bestLineGrad)"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                className="leak-line-draw"
+                              />
+                              
+                              {/* User rate line */}
+                              <path
+                                d={userPath}
+                                fill="none"
+                                stroke="url(#userLineGrad)"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                className="leak-line-draw"
+                                style={{ animationDelay: '0.2s' }}
+                              />
+                              
+                              {/* Data points + interactive hover areas */}
+                              {years.map(y => (
+                                <g key={`points-${y}`}>
+                                  {/* Invisible hover zone */}
+                                  <rect
+                                    x={toX(y) - chartW / 12}
+                                    y={padT}
+                                    width={chartW / 6}
+                                    height={chartH}
+                                    fill="transparent"
+                                    className="cursor-pointer"
+                                    onMouseEnter={() => setHoveredYear(y)}
+                                  />
+                                  
+                                  {/* Vertical hover line */}
+                                  {hoveredYear === y && (
+                                    <line
+                                      x1={toX(y)} y1={padT}
+                                      x2={toX(y)} y2={padT + chartH}
+                                      stroke="rgba(29,201,106,0.25)"
+                                      strokeWidth="1"
+                                      strokeDasharray="3,3"
+                                    />
+                                  )}
+                                  
+                                  {/* Best dot */}
+                                  <circle
+                                    cx={toX(y)} cy={toY(bestGrowth[y])}
+                                    r={hoveredYear === y ? 5 : 3}
+                                    fill="#1dc96a"
+                                    stroke="white"
+                                    strokeWidth="1.5"
+                                    className="transition-all duration-200"
+                                  />
+                                  {/* User dot */}
+                                  <circle
+                                    cx={toX(y)} cy={toY(userGrowth[y])}
+                                    r={hoveredYear === y ? 5 : 3}
+                                    fill="#f39c12"
+                                    stroke="white"
+                                    strokeWidth="1.5"
+                                    className="transition-all duration-200"
+                                  />
+                                </g>
+                              ))}
+                              
+                              {/* X-axis labels */}
+                              {years.map(y => (
+                                <text
+                                  key={`label-${y}`}
+                                  x={toX(y)}
+                                  y={H - 8}
+                                  textAnchor="middle"
+                                  className="fill-primary/40"
+                                  style={{ fontSize: '7.5px', fontWeight: 600, fontFamily: 'Manrope, sans-serif', letterSpacing: '0.03em' }}
+                                >
+                                  {y === 0 ? 'Now' : `${y}Y`}
+                                </text>
+                              ))}
+                            </svg>
+                            
+                            {/* Hover Tooltip */}
+                            {hoveredYear !== null && (
+                              <div 
+                                className="absolute pointer-events-none px-3 py-2 rounded-xl bg-white border border-primary/15 shadow-lg shadow-primary/5 -translate-x-1/2 z-10 leak-slide-in"
+                                style={{ 
+                                  left: `${(hoveredYear / 5) * 100}%`,
+                                  top: '-8px',
+                                  transform: `translateX(-50%) translateY(-100%)`,
+                                  minWidth: '140px',
+                                }}
+                              >
+                                <p className="text-[9px] uppercase tracking-widest text-primary/50 font-bold mb-1">
+                                  {hoveredYear === 0 ? 'Starting' : `After ${hoveredYear} Year${hoveredYear > 1 ? 's' : ''}`}
+                                </p>
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#1dc96a]" />
+                                  <span className="text-[11px] font-bold text-charcoal/80 tabular-nums">{formatCurrencyValue(hBest, leakData.currencyCode, language)}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#f39c12]" />
+                                  <span className="text-[11px] font-bold text-charcoal/80 tabular-nums">{formatCurrencyValue(hUser, leakData.currencyCode, language)}</span>
+                                </div>
+                                {hDiff > 0 && (
+                                  <p className="text-[10px] font-bold text-orange-500 tabular-nums border-t border-primary/10 pt-1">
+                                    -{formatCurrencyValue(hDiff, leakData.currencyCode, language)} missed
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Summary below graph */}
+                          <div className="mt-3 flex justify-between items-center text-[10px]">
+                            <span className="text-primary/50 font-semibold">
+                              Total after 5 years at best rate: <span className="text-primary font-bold">{formatCurrencyValue(bestGrowth[5], leakData.currencyCode, language)}</span>
+                            </span>
+                            <span className="text-orange-500 font-bold tabular-nums">
+                              -{formatCurrencyValue(bestGrowth[5] - userGrowth[5], leakData.currencyCode, language)} over 5yr
+                            </span>
                           </div>
                         </div>
                       );
