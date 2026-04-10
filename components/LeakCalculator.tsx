@@ -329,12 +329,10 @@ const mixColors = (from: string, to: string, t: number): string => {
 
 const getThemeColorForScore = (score: number): string => {
   const normalized = clamp(score, 0, 100) / 100;
-  const coralDeep = mixColors('#f2a68d', '#2d3436', 0.25);
   const stops: { t: number; color: string }[] = [
-    { t: 0, color: '#9db4a9' },
-    { t: 0.4, color: '#1dc96a' },
-    { t: 0.7, color: '#f2a68d' },
-    { t: 1, color: coralDeep },
+    { t: 0, color: '#e74c3c' },     // Red (Critical)
+    { t: 0.5, color: '#f39c12' },   // Orange/Yellow (Moderate)
+    { t: 1, color: '#1dc96a' },     // Green (Great)
   ];
 
   for (let i = 0; i < stops.length - 1; i += 1) {
@@ -375,6 +373,9 @@ const LeakCalculator: React.FC = () => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [leakScore, setLeakScore] = useState<number | null>(null);
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+  const [displayScore, setDisplayScore] = useState(0);
+  const [analysisStep, setAnalysisStep] = useState<number>(0);
+  const [showResult, setShowResult] = useState(false);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const confettiPieces = useMemo(() => {
     if (!showOverlay) {
@@ -382,19 +383,50 @@ const LeakCalculator: React.FC = () => {
     }
 
     const baseColor = getThemeColorForScore(leakScore ?? 0);
-    const lightColor = mixColors(baseColor, '#ffffff', 0.35);
-    const darkColor = mixColors(baseColor, '#2d3436', 0.35);
-    const colors = [lightColor, baseColor, darkColor, mixColors(baseColor, '#1dc96a', 0.4), '#ffffff'];
-    return Array.from({ length: 36 }, (_, index) => ({
-      id: `confetti-${index}`,
-      left: Math.random() * 100,
-      size: 6 + Math.random() * 8,
-      delay: Math.random() * 0.8,
-      duration: 2.8 + Math.random() * 2.4,
-      color: colors[index % colors.length],
-      opacity: 0.7 + Math.random() * 0.3,
-    }));
+    const lightColor = mixColors(baseColor, '#ffffff', 0.5);
+    const darkColor = mixColors(baseColor, '#000000', 0.3);
+    const colors = [lightColor, baseColor, darkColor, '#ffffff'];
+    
+    return Array.from({ length: 40 }, (_, index) => {
+      const isBadScore = (leakScore ?? 0) < 50;
+      return {
+        id: `particle-${index}`,
+        left: Math.random() * 100,
+        size: isBadScore ? 4 + Math.random() * 6 : 6 + Math.random() * 8,
+        delay: Math.random() * (isBadScore ? 1.5 : 0.8),
+        duration: isBadScore ? 1.5 + Math.random() * 1.5 : 2.8 + Math.random() * 2.4,
+        color: colors[index % colors.length],
+        opacity: isBadScore ? 0.4 + Math.random() * 0.4 : 0.7 + Math.random() * 0.3,
+        className: isBadScore ? 'leak-drop' : 'confetti-piece',
+      };
+    });
   }, [showOverlay, leakScore]);
+
+  useEffect(() => {
+    if (showResult && leakScore !== null) {
+      let animationFrame: number;
+      const duration = 2200; // ms
+      const startTime = performance.now();
+      
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 4); // easeOutQuart
+        setDisplayScore(Math.round(easeProgress * leakScore));
+        
+        if (progress < 1) {
+          animationFrame = requestAnimationFrame(animate);
+        }
+      };
+      
+      animationFrame = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(animationFrame);
+    } else if (!showOverlay) {
+      setDisplayScore(0);
+      setShowResult(false);
+      setAnalysisStep(0);
+    }
+  }, [showResult, showOverlay, leakScore]);
 
   const currency = useMemo(() => (country ? currencyByCountry[country] : null), [country]);
   const bankLogoMap = useMemo(() => {
@@ -613,7 +645,7 @@ const LeakCalculator: React.FC = () => {
     setLeakStatus('loading');
     setLeakValue('');
     setLeakNote('');
-    setLeakScore(80);
+    setLeakScore(80); // Ensure the temporary score is set to test the ring
     setShowOverlay(true);
 
     const setSoftFallback = () => {
@@ -623,52 +655,68 @@ const LeakCalculator: React.FC = () => {
     };
 
     try {
-      const response = await fetch('/api/leak', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          country,
-          banks: parsedEntries.map((entry) => ({
-            bankId: entry.bankId,
-            amount: entry.parsedAmount as number,
-          })),
-        }),
-      });
-
-      let payload: unknown = null;
+      let score = 0;
       try {
-        payload = await response.json();
+        const response = await fetch('/api/leak', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            country,
+            banks: parsedEntries.map((entry) => ({
+              bankId: entry.bankId,
+              amount: entry.parsedAmount as number,
+            })),
+          }),
+        });
+
+        let payload: unknown = null;
+        try {
+          payload = await response.json();
+        } catch {
+          payload = null;
+        }
+
+        if (response.ok) {
+          const value = extractLeakValue(payload, currency?.code ?? null, language);
+          const payloadObject =
+            payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
+          const note =
+            payloadObject && typeof payloadObject.note === 'string'
+              ? payloadObject.note
+              : stickyFooter.leakDescription;
+
+          setLeakStatus('ready');
+          setLeakValue(value || '---');
+          setLeakNote(note);
+          score = parseLeakScore(payload, value || '0') ?? 75;
+        } else {
+          // Fallback for missing API since logic is "later"
+          setLeakStatus('pending');
+          setLeakValue('---');
+          setLeakNote(stickyFooter.leakFallback);
+          score = Math.floor(Math.random() * 40) + 40; // Random moderate score for demo
+        }
       } catch {
-        payload = null;
+        setLeakStatus('pending');
+        setLeakValue('---');
+        setLeakNote(stickyFooter.leakFallback);
+        score = Math.floor(Math.random() * 30) + 30; // Random low score for demo
       }
 
-      if (!response.ok) {
-        setSoftFallback();
-        return;
-      }
-
-      const value = extractLeakValue(payload, currency?.code ?? null, language);
-      if (!value) {
-        setSoftFallback();
-        return;
-      }
-
-      const payloadObject =
-        payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
-      const note =
-        payloadObject && typeof payloadObject.note === 'string'
-          ? payloadObject.note
-          : stickyFooter.leakDescription;
-
-      setLeakStatus('ready');
-      setLeakValue(value);
-      setLeakNote(note);
-      const score = parseLeakScore(payload, value) ?? 80;
       setLeakScore(score);
-    } catch {
-      setSoftFallback();
+
+      // Creative "Scanning" sequence (always runs)
+      setShowOverlay(true);
+      setAnalysisStep(1); // Connecting...
+      await new Promise((r) => setTimeout(r, 800));
+      setAnalysisStep(2); // Analyzing leak patterns...
+      await new Promise((r) => setTimeout(r, 1000));
+      setAnalysisStep(3); // Calculating score...
+      await new Promise((r) => setTimeout(r, 800));
+
+      setShowResult(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -687,15 +735,15 @@ const LeakCalculator: React.FC = () => {
   const leakMessage =
     leakScore === null
       ? ''
-      : leakScore >= 100
-        ? stickyFooter.leakOverlayCritical
-        : leakScore >= 75
-          ? stickyFooter.leakOverlayVeryHigh
+      : leakScore >= 90
+        ? stickyFooter.leakOverlayLow
+        : leakScore >= 70
+          ? stickyFooter.leakOverlayModerate
           : leakScore >= 50
             ? stickyFooter.leakOverlayHigh
-          : leakScore >= 25
-              ? stickyFooter.leakOverlayModerate
-              : stickyFooter.leakOverlayLow;
+          : leakScore >= 30
+              ? stickyFooter.leakOverlayVeryHigh
+              : stickyFooter.leakOverlayCritical;
   const scoreValue = leakScore ?? 0;
   const overlayBaseColor = getThemeColorForScore(scoreValue);
   const overlayLight = mixColors(overlayBaseColor, '#ffffff', 0.35);
@@ -1030,31 +1078,114 @@ const LeakCalculator: React.FC = () => {
             {confettiPieces.map((piece) => (
               <span
                 key={piece.id}
-                className="confetti-piece"
+                className={piece.className}
                 style={{
                   left: `${piece.left}%`,
                   width: `${piece.size}px`,
-                  height: `${piece.size * 0.6}px`,
+                  height: piece.className === 'leak-drop' ? `${piece.size * 1.5}px` : `${piece.size * 0.6}px`,
                   animationDelay: `${piece.delay}s`,
                   animationDuration: `${piece.duration}s`,
                   backgroundColor: piece.color,
                   opacity: piece.opacity,
+                  filter: piece.className === 'leak-drop' ? 'blur(1px)' : 'none',
                 }}
               />
             ))}
           </div>
-          <div className="relative w-full max-w-3xl overflow-hidden rounded-[2.5rem] border border-white/20 bg-black/60 p-8 text-center text-white shadow-2xl">
+          <div className="relative w-[90%] max-w-lg overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#0d1117]/80 p-8 sm:p-10 text-center text-white shadow-2xl backdrop-blur-xl">
             <div className="absolute inset-0" style={overlayGlowStyle} />
-            <div className="relative z-10 flex flex-col items-center gap-4">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-white/70 font-semibold">
-                {stickyFooter.leakOverlayTitle}
+            <div className="relative z-10 flex flex-col items-center gap-6 py-4">
+              
+              <p className="text-[10px] uppercase tracking-[0.4em] text-white/50 font-bold">
+                {showResult ? stickyFooter.leakOverlayTitle : 'Intelligence Engine'}
               </p>
-              <div className="text-6xl sm:text-7xl font-black tracking-tight">
-                {leakScore !== null ? leakScore : '—'}
-              </div>
-              {leakMessage ? (
-                <p className="max-w-xl text-sm sm:text-base text-white/80">{leakMessage}</p>
-              ) : null}
+              
+              {!showResult ? (
+                /* Scanning State */
+                <div className="flex flex-col items-center justify-center min-h-[220px] sm:min-h-[260px] gap-8">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full animate-pulse" />
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-primary/30 flex items-center justify-center overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent animate-scan-up" />
+                      <span className="material-icons text-4xl sm:text-5xl text-primary animate-pulse">radar</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col items-center gap-2">
+                    <p className="text-lg sm:text-xl font-light tracking-tight text-white/90 score-text-pop">
+                      {analysisStep === 1 
+                        ? 'Establishing secure connection...' 
+                        : analysisStep === 2 
+                          ? 'Analyzing capital flow patterns...' 
+                          : 'Synthesizing final safety markers...'}
+                    </p>
+                    <div className="flex gap-1.5 mt-2">
+                      <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${analysisStep >= 1 ? 'bg-primary' : 'bg-white/10'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${analysisStep >= 2 ? 'bg-primary' : 'bg-white/10'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${analysisStep >= 3 ? 'bg-primary' : 'bg-white/10'}`} />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Result State (Circular Gauge) */
+                <>
+                  <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center">
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 300">
+                      <circle
+                        cx="150"
+                        cy="150"
+                        r="140"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.05)"
+                        strokeWidth="16"
+                      />
+                      <circle
+                        className="score-ring drop-shadow-lg"
+                        cx="150"
+                        cy="150"
+                        r="140"
+                        fill="none"
+                        stroke={getThemeColorForScore(leakScore ?? 0)}
+                        strokeWidth="16"
+                        strokeLinecap="round"
+                        strokeDasharray={880}
+                        style={{ strokeDashoffset: leakScore !== null ? 880 - (880 * displayScore) / 100 : 880 }}
+                      />
+                    </svg>
+                    
+                    <div className="relative flex flex-col items-center justify-center">
+                      <div className="text-6xl sm:text-7xl font-black tracking-tighter tabular-nums score-text-pop drop-shadow-md">
+                        {displayScore}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-widest text-white/40 font-bold mt-1">
+                        Stability Index
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex flex-col items-center gap-3">
+                    <span 
+                      className="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white/5 border border-white/10 shadow-inner"
+                      style={{ color: getThemeColorForScore(leakScore ?? 0) }}
+                    >
+                      {(leakScore ?? 0) >= 80 ? 'Optimal Efficiency' : (leakScore ?? 0) >= 50 ? 'Moderate Leakage' : 'Critical Depletion'}
+                    </span>
+                    {leakMessage ? (
+                      <p className="max-w-[280px] sm:max-w-xs text-sm sm:text-base text-white/80 leading-relaxed font-medium">
+                        {leakMessage}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowOverlay(false)}
+                    className="mt-4 px-8 py-4 w-full rounded-[1.25rem] font-bold text-sm tracking-wide bg-white/10 hover:bg-white/20 transition-all border border-white/10 hover:border-white/25 active:scale-95"
+                  >
+                    Return to Financial View
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -347,3 +347,65 @@
   0%, 100% { opacity: 0.4; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1.2); }
 }
+
+/* ─── Reveal Score Ring & Counter ─── */
+@keyframes ring-fill {
+  from {
+    stroke-dashoffset: 880; /* Approximates circumference */
+  }
+}
+
+.score-ring {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 2.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.score-text-pop {
+  animation: score-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes score-pop {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ─── Bad Score Particles (Leak Drops) ─── */
+.leak-drop {
+  position: absolute;
+  top: -10%;
+  border-radius: 50%;
+  animation: drop-fall linear infinite;
+  will-change: transform, top, opacity;
+}
+
+@keyframes drop-fall {
+  0% {
+    top: -10%;
+    transform: scale(0.8) translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    top: 110%;
+    transform: scale(1.2) translateY(50px);
+    opacity: 0;
+  }
+}
+
+@keyframes scan-up {
+  0% { top: 100%; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { top: -20%; opacity: 0; }
+}
+
+.animate-scan-up {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 20%;
+  animation: scan-up 1.5s ease-in-out infinite;
+}
