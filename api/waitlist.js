@@ -100,7 +100,7 @@ export default async function handler(req, res) {
       try {
         const resend = new Resend(resendApiKey);
         const welcomeEmailPromise = resend.emails.send({
-          from: 'onboarding@resend.dev',
+          from: 'Sampada AI Waitlist <waitlist@sampadai.com>',
           to: email,
           subject: "You're on the list! 🚀",
           html: `<!DOCTYPE html>
@@ -131,7 +131,7 @@ export default async function handler(req, res) {
         });
 
         const adminNotificationPromise = resend.emails.send({
-          from: 'onboarding@resend.dev',
+          from: 'Sampada AI Waitlist <waitlist@sampadai.com>',
           to: ['the.art.of.amazement@gmail.com', 'volosach.lera@gmail.com', 'saurabh.friday@gmail.com'],
           subject: `🎉 New Waitlist Signup: ${email}`,
           html: `
