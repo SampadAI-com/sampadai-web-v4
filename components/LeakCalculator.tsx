@@ -394,6 +394,14 @@ const LeakCalculator: React.FC = () => {
   const [displayScore, setDisplayScore] = useState(0);
   const [analysisStep, setAnalysisStep] = useState<number>(0);
   const [showResult, setShowResult] = useState(false);
+  const [leakData, setLeakData] = useState<{
+    userAvgRate: number;
+    maxRate: number;
+    totalAmount: number;
+    annualLeak: number;
+    currencyCode: string;
+    isOverLimit: boolean;
+  } | null>(null);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const confettiPieces = useMemo(() => {
     if (!showOverlay) {
@@ -729,6 +737,15 @@ const LeakCalculator: React.FC = () => {
         finalNote = overLimitAmount > 0 
           ? `Money above ${limitInfo.limit.toLocaleString()} ${limitInfo.currency} in a single bank is not insured.`
           : 'Your funds are within protected insurance limits.';
+
+        setLeakData({
+          userAvgRate,
+          maxRate,
+          totalAmount,
+          annualLeak,
+          currencyCode: limitInfo.currency,
+          isOverLimit: overLimitAmount > 0,
+        });
 
         setLeakStatus('ready');
         setLeakValue(formatCurrencyValue(annualLeak, limitInfo.currency, language));
@@ -1145,9 +1162,9 @@ const LeakCalculator: React.FC = () => {
               />
             ))}
           </div>
-          <div className="relative w-[90%] max-w-lg overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#0d1117]/80 p-8 sm:p-10 text-center text-white shadow-2xl backdrop-blur-xl">
-            <div className="absolute inset-0" style={overlayGlowStyle} />
-            <div className="relative z-10 flex flex-col items-center gap-6 py-4">
+          <div className="relative w-[92%] max-w-xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-white/10 bg-[#0d1117]/80 p-6 sm:p-8 text-center text-white shadow-2xl backdrop-blur-xl">
+            <div className="absolute inset-0 rounded-[2.5rem]" style={overlayGlowStyle} />
+            <div className="relative z-10 flex flex-col items-center gap-4 py-3">
               
               <p className="text-[10px] uppercase tracking-[0.4em] text-white/50 font-bold">
                 {showResult ? stickyFooter.leakOverlayTitle : 'Intelligence Engine'}
@@ -1180,60 +1197,136 @@ const LeakCalculator: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                /* Result State (Circular Gauge) */
+                /* Result State — Score + Graph Panel */
                 <>
-                  <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center">
-                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 300">
-                      <circle
-                        cx="150"
-                        cy="150"
-                        r="140"
-                        fill="none"
-                        stroke="rgba(255,255,255,0.05)"
-                        strokeWidth="16"
-                      />
-                      <circle
-                        className="score-ring drop-shadow-lg"
-                        cx="150"
-                        cy="150"
-                        r="140"
-                        fill="none"
-                        stroke={getThemeColorForScore(leakScore ?? 0)}
-                        strokeWidth="16"
-                        strokeLinecap="round"
-                        strokeDasharray={880}
-                        style={{ strokeDashoffset: leakScore !== null ? 880 - (880 * displayScore) / 100 : 880 }}
-                      />
-                    </svg>
-                    
-                    <div className="relative flex flex-col items-center justify-center">
-                      <div className="text-6xl sm:text-7xl font-black tracking-tighter tabular-nums score-text-pop drop-shadow-md">
+                  {/* Score Bar */}
+                  <div className="w-full max-w-sm">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <span className="text-4xl sm:text-5xl font-black tabular-nums score-text-pop" style={{ color: getThemeColorForScore(leakScore ?? 0) }}>
                         {displayScore}
-                      </div>
-                      <div className="text-[10px] uppercase tracking-widest text-white/40 font-bold mt-1">
-                        Stability Index
-                      </div>
+                      </span>
+                      <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">/100 Stability Index</span>
+                    </div>
+                    <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all duration-[2200ms] ease-out"
+                        style={{ 
+                          width: `${displayScore}%`,
+                          background: `linear-gradient(90deg, #e74c3c, #f39c12, #1dc96a)`,
+                        }}
+                      />
+                    </div>
+                    <div className="mt-2 text-center">
+                      <span 
+                        className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white/5 border border-white/10"
+                        style={{ color: getThemeColorForScore(leakScore ?? 0) }}
+                      >
+                        {(leakScore ?? 0) >= 80 ? 'Optimal Efficiency' : (leakScore ?? 0) >= 50 ? 'Moderate Leakage' : 'Critical Depletion'}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="mt-2 flex flex-col items-center gap-3">
-                    <span 
-                      className="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white/5 border border-white/10 shadow-inner"
-                      style={{ color: getThemeColorForScore(leakScore ?? 0) }}
-                    >
-                      {(leakScore ?? 0) >= 80 ? 'Optimal Efficiency' : (leakScore ?? 0) >= 50 ? 'Moderate Leakage' : 'Critical Depletion'}
-                    </span>
-                    {leakMessage ? (
-                      <p className="max-w-[280px] sm:max-w-xs text-sm sm:text-base text-white/80 leading-relaxed font-medium">
+                  {/* Annual Leak */}
+                  {leakData && (
+                    <div className="w-full max-w-sm mt-2 p-4 rounded-2xl bg-white/5 border border-white/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="material-icons text-lg" style={{ color: getThemeColorForScore(leakScore ?? 0) }}>water_drop</span>
+                          <span className="text-[10px] uppercase tracking-widest text-white/50 font-bold">Annual Leak</span>
+                        </div>
+                        <span className="text-xl sm:text-2xl font-black tabular-nums" style={{ color: leakData.annualLeak > 0 ? '#f39c12' : '#1dc96a' }}>
+                          {formatCurrencyValue(leakData.annualLeak, leakData.currencyCode, language)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-white/40 mt-1.5">
+                        Difference between your weighted average rate ({leakData.userAvgRate.toFixed(2)}%) and the best available ({leakData.maxRate.toFixed(2)}%)
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Projection Graph — 1yr & 5yr */}
+                  {leakData && leakData.totalAmount > 0 && (
+                    <div className="w-full max-w-sm mt-1">
+                      <p className="text-[10px] uppercase tracking-widest text-white/50 font-bold mb-3 text-left">Money Left on Table</p>
+                      
+                      {(() => {
+                        const currentReturn1yr = leakData.totalAmount * (leakData.userAvgRate / 100);
+                        const optimalReturn1yr = leakData.totalAmount * (leakData.maxRate / 100);
+                        const currentReturn5yr = leakData.totalAmount * Math.pow(1 + leakData.userAvgRate / 100, 5) - leakData.totalAmount;
+                        const optimalReturn5yr = leakData.totalAmount * Math.pow(1 + leakData.maxRate / 100, 5) - leakData.totalAmount;
+                        const maxVal = Math.max(optimalReturn1yr, optimalReturn5yr, 1);
+
+                        const BarPair = ({ label, current, optimal, maxScale }: { label: string; current: number; optimal: number; maxScale: number }) => (
+                          <div className="mb-4 last:mb-0">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs font-semibold text-white/70">{label}</span>
+                              <span className="text-[10px] font-bold tabular-nums" style={{ color: '#f39c12' }}>
+                                -{formatCurrencyValue(optimal - current, leakData.currencyCode, language)} missed
+                              </span>
+                            </div>
+                            {/* Optimal (Best available) */}
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[9px] w-12 text-right text-white/40 font-semibold shrink-0">Best</span>
+                              <div className="flex-1 h-5 rounded-lg bg-white/5 overflow-hidden relative">
+                                <div 
+                                  className="h-full rounded-lg leak-bar-animate"
+                                  style={{ 
+                                    width: `${Math.max((optimal / maxScale) * 100, 2)}%`,
+                                    background: 'linear-gradient(90deg, #1dc96a, #17a356)',
+                                  }}
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-white/80 tabular-nums drop-shadow">
+                                  {formatCurrencyValue(optimal, leakData.currencyCode, language)}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Current (Your rate) */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] w-12 text-right text-white/40 font-semibold shrink-0">Yours</span>
+                              <div className="flex-1 h-5 rounded-lg bg-white/5 overflow-hidden relative">
+                                <div 
+                                  className="h-full rounded-lg leak-bar-animate"
+                                  style={{ 
+                                    width: `${Math.max((current / maxScale) * 100, 2)}%`,
+                                    background: 'linear-gradient(90deg, #f39c12, #e67e22)',
+                                    animationDelay: '0.15s',
+                                  }}
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-white/80 tabular-nums drop-shadow">
+                                  {formatCurrencyValue(current, leakData.currencyCode, language)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+
+                        return (
+                          <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <BarPair label="1 Year" current={currentReturn1yr} optimal={optimalReturn1yr} maxScale={maxVal} />
+                            <div className="border-t border-white/5 my-3" />
+                            <BarPair label="5 Years (compounded)" current={currentReturn5yr} optimal={optimalReturn5yr} maxScale={Math.max(optimalReturn5yr, 1)} />
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Insurance Note */}
+                  {leakMessage ? (
+                    <div className="w-full max-w-sm mt-1 flex items-start gap-2 px-1">
+                      <span className="material-icons text-sm mt-0.5" style={{ color: leakData?.isOverLimit ? '#f39c12' : '#1dc96a' }}>
+                        {leakData?.isOverLimit ? 'warning_amber' : 'verified_user'}
+                      </span>
+                      <p className="text-[11px] text-white/60 leading-relaxed">
                         {leakMessage}
                       </p>
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
 
                   <button
                     type="button"
                     onClick={() => setShowOverlay(false)}
-                    className="mt-4 px-8 py-4 w-full rounded-[1.25rem] font-bold text-sm tracking-wide bg-white/10 hover:bg-white/20 transition-all border border-white/10 hover:border-white/25 active:scale-95"
+                    className="mt-2 px-8 py-4 w-full max-w-sm rounded-[1.25rem] font-bold text-sm tracking-wide bg-white/10 hover:bg-white/20 transition-all border border-white/10 hover:border-white/25 active:scale-95"
                   >
                     Return to Financial View
                   </button>
