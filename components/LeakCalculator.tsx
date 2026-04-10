@@ -901,13 +901,24 @@ const LeakCalculator: React.FC = () => {
                   return (
                     <div
                       key={entry.id}
-                      className="leak-bank-card"
+                      className="leak-bank-card flex flex-col gap-2"
                     >
-                      {/* Bank logo / avatar */}
-                      <div className="flex gap-4">
-                        <div className="flex flex-col">
-                          <span className={`block mb-1.5 ${index === 0 ? 'min-h-[16.5px]' : 'sr-only'} select-none`}>&nbsp;</span>
-                          <div className="leak-bank-logo -mt-[2px]">
+                      {/* Column Labels (Desktop only, first row only) */}
+                      {index === 0 && (
+                        <div className="hidden sm:flex gap-4 ml-[68px] mb-1">
+                          <div className="flex-1">
+                            <span className={labelClass}>{stickyFooter.bankLabel}</span>
+                          </div>
+                          <div className="flex-1">
+                            <span className={labelClass}>{stickyFooter.amountLabel}</span>
+                          </div>
+                          <div className="w-[46px]" /> {/* Spacer for Remove button */}
+                        </div>
+                      )}
+
+                      <div className="flex gap-4 items-start sm:items-center">
+                        {/* Bank logo / avatar */}
+                        <div className="leak-bank-logo shrink-0">
                           {isFetchingBanks || isFetchingLogos ? (
                             <div className="leak-shimmer h-full w-full rounded-2xl" />
                           ) : logoUrl ? (
@@ -931,14 +942,17 @@ const LeakCalculator: React.FC = () => {
                             </>
                           )}
                         </div>
-                      </div>
 
-                      <div className="flex-1 min-w-0 flex flex-col sm:flex-row gap-3">
+                        {/* Inputs Container */}
+                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row gap-3">
                           {/* Bank select */}
                           <div className="flex-1 min-w-0">
-                            <span className={`${labelClass} block mb-1.5 ${index === 0 ? '' : 'sr-only'}`}>
-                              {stickyFooter.bankLabel}
-                            </span>
+                            {/* Mobile-only label */}
+                            {index === 0 && (
+                              <span className={`sm:hidden ${labelClass} block mb-1.5`}>
+                                {stickyFooter.bankLabel}
+                              </span>
+                            )}
                             <select
                               className={`${controlClass} flex-1`}
                               value={entry.bankId}
@@ -961,9 +975,12 @@ const LeakCalculator: React.FC = () => {
 
                           {/* Amount input */}
                           <div className="flex-1 min-w-0">
-                            <span className={`${labelClass} block mb-1.5 ${index === 0 ? '' : 'sr-only'}`}>
-                              {stickyFooter.amountLabel}
-                            </span>
+                            {/* Mobile-only label */}
+                            {index === 0 && (
+                              <span className={`sm:hidden ${labelClass} block mb-1.5`}>
+                                {stickyFooter.amountLabel}
+                              </span>
+                            )}
                             <div className="relative">
                               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-primary/60">
                                 {currency ? currency.symbol : '€'}
@@ -984,19 +1001,19 @@ const LeakCalculator: React.FC = () => {
                               ) : null}
                             </div>
                           </div>
+                        </div>
 
-                          {/* Remove button */}
-                          <div className="flex items-end">
-                            <button
-                              type="button"
-                              onClick={() => removeBankEntry(entry.id)}
-                              disabled={bankEntries.length === 1}
-                              className="h-[46px] w-[46px] rounded-2xl border border-primary/15 flex items-center justify-center text-primary/50 transition hover:border-red-300 hover:text-red-400 hover:bg-red-50/50 disabled:cursor-not-allowed disabled:opacity-30"
-                              title={stickyFooter.removeBankButton}
-                            >
-                              <span className="material-icons text-lg">close</span>
-                            </button>
-                          </div>
+                        {/* Remove button */}
+                        <div className={index === 0 ? "self-end sm:self-center" : "self-center"}>
+                          <button
+                            type="button"
+                            onClick={() => removeBankEntry(entry.id)}
+                            disabled={bankEntries.length === 1}
+                            className="h-[46px] w-[46px] rounded-2xl border border-primary/15 flex items-center justify-center text-primary/50 transition hover:border-red-300 hover:text-red-400 hover:bg-red-50/50 disabled:cursor-not-allowed disabled:opacity-30"
+                            title={stickyFooter.removeBankButton}
+                          >
+                            <span className="material-icons text-lg">close</span>
+                          </button>
                         </div>
                       </div>
                     </div>
