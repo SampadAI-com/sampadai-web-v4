@@ -102,18 +102,32 @@ export default async function handler(req, res) {
         const { data, error } = await resend.emails.send({
           from: 'onboarding@resend.dev',
           to: email,
-          subject: 'Welcome to the SampadAI Waitlist!',
-          html: `
-            <div style="font-family: sans-serif; color: #333; max-w-xl; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #1dc96a;">You're on the list!</h2>
-              <p>Hi there,</p>
-              <p>Thank you for joining the SampadAI waitlist. We're thrilled to have you with us on this journey to financial wellness.</p>
-              <p>We'll notify you as soon as your spot opens up so you can access the platform.</p>
-              <br/>
-              <p>Warmly,</p>
-              <p><strong>The SampadAI Team</strong></p>
-            </div>
-          `,
+          subject: "You're on the list! 🚀",
+          html: `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #000; }
+    .footer { margin-top: 30px; font-size: 12px; color: #888; }
+    .button { background: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">Sampada AI</div>
+    <p>Hi there,</p>
+    <p>Thanks for joining the waitlist for <strong>Sampada AI</strong>! We're excited to show you what we've been working on.</p>
+    <p>We are currently onboarding users in small groups to maintain quality. You'll receive another email the moment your account is ready to be activated.</p>
+    <p>Stay tuned,</p>
+    <p><strong>The Sampada AI Team</strong></p>
+    <div class="footer">
+      You are receiving this because you signed up at <a href="https://sampadai.com">sampadai.com</a>.
+    </div>
+  </div>
+</body>
+</html>`,
         });
         
         if (error) {
