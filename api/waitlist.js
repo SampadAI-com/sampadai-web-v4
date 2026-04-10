@@ -1,9 +1,6 @@
 import { google } from 'googleapis';
 import { Resend } from 'resend';
 
-const resendApiKey = process.env.RESEND_API_KEY;
-const resend = resendApiKey ? new Resend(resendApiKey) : null;
-
 const WAITLIST_RANGE = 'Waitlist!A:D';
 const GOOGLE_SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 
@@ -98,9 +95,11 @@ export default async function handler(req, res) {
       country: readCountryFromRequest(req),
     });
 
-    if (resend) {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
       try {
-        await resend.emails.send({
+        const resend = new Resend(resendApiKey);
+        const { data, error } = await resend.emails.send({
           from: 'onboarding@resend.dev',
           to: email,
           subject: 'Welcome to the SampadAI Waitlist!',
@@ -116,8 +115,14 @@ export default async function handler(req, res) {
             </div>
           `,
         });
+        
+        if (error) {
+          console.warn('Waitlist success, but Resend API returned an error:', error);
+        } else {
+          console.log('Successfully sent welcome email to:', email);
+        }
       } catch (emailError) {
-        console.warn('Waitlist success, but failed to send confirmation email:', emailError);
+        console.warn('Waitlist success, but internal error occurred sending email:', emailError);
       }
     } else {
       console.warn('RESEND_API_KEY is not defined. Skipping email notification.');
