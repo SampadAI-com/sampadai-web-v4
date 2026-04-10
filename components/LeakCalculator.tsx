@@ -83,8 +83,8 @@ const bankTableCandidates: Record<CountryCode, string[]> = {
 const INSURANCE_LIMITS: Record<CountryCode, { limit: number; currency: string }> = {
   DE: { limit: 100000, currency: 'EUR' },
   ES: { limit: 100000, currency: 'EUR' },
-  PL: { limit: 100000, currency: 'EUR' },
-  GB: { limit: 120000, currency: 'GBP' },
+  PL: { limit: 430000, currency: 'PLN' },
+  GB: { limit: 85000, currency: 'GBP' },
   US: { limit: 250000, currency: 'USD' },
 };
 
@@ -403,6 +403,10 @@ const LeakCalculator: React.FC = () => {
     isOverLimit: boolean;
   } | null>(null);
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
+  const [email, setEmail] = useState('');
+  const [isWaitlistSubmitting, setIsWaitlistSubmitting] = useState(false);
+  const [waitlistStatus, setWaitlistStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [waitlistMessage, setWaitlistMessage] = useState('');
   const cardRef = React.useRef<HTMLDivElement>(null);
 
   // Animate score counter when leakScore changes
@@ -730,8 +734,10 @@ const LeakCalculator: React.FC = () => {
 
         score = Math.round((yieldScore * 0.6) + (safetyScore * 0.4));
         finalNote = overLimitAmount > 0 
-          ? `Money above ${limitInfo.limit.toLocaleString()} ${limitInfo.currency} in a single bank is not insured.`
-          : 'Your funds are within protected insurance limits.';
+          ? stickyFooter.insuranceNoteOverLimit
+              .replace('{limit}', limitInfo.limit.toLocaleString())
+              .replace('{currency}', limitInfo.currency)
+          : stickyFooter.insuranceNoteSafe;
 
         setLeakData({
           userAvgRate,
@@ -756,6 +762,39 @@ const LeakCalculator: React.FC = () => {
       setLeakScore(score);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const submitWaitlist = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (!email.trim() || !email.includes('@')) {
+      setWaitlistStatus('error');
+      setWaitlistMessage(stickyFooter.waitlistPlaceholder);
+      return;
+    }
+    
+    setIsWaitlistSubmitting(true);
+    setWaitlistStatus('idle');
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setWaitlistStatus('success');
+        setWaitlistMessage(stickyFooter.waitlistSuccess);
+        setEmail('');
+      } else {
+        setWaitlistStatus('error');
+        setWaitlistMessage(data.message || 'Error joining waitlist.');
+      }
+    } catch {
+      setWaitlistStatus('error');
+      setWaitlistMessage('Error connecting to waitlist.');
+    } finally {
+      setIsWaitlistSubmitting(false);
     }
   };
 
@@ -1031,10 +1070,10 @@ const LeakCalculator: React.FC = () => {
                   ) : bankSource === 'supabase' ? (
                     <span className="flex items-center gap-1.5 opacity-60">
                       <span className="material-icons text-[14px]">cloud_done</span>
-                      Live signals. Smarter decisions. SampadAI inside.
+                      {stickyFooter.signalsInside}
                     </span>
                   ) : banks.length === 0 ? (
-                    <span className="text-red-400">No banks found for this country in the database.</span>
+                    <span className="text-red-400">{stickyFooter.bankEmpty}</span>
                   ) : null}
                 </div>
 
@@ -1108,7 +1147,7 @@ const LeakCalculator: React.FC = () => {
                             backgroundColor: `${getThemeColorForScore(leakScore)}10`,
                           }}
                         >
-                          {leakScore >= 80 ? 'Optimal' : leakScore >= 50 ? 'Moderate Leak' : 'Critical'}
+                          {leakScore >= 80 ? stickyFooter.optimal : leakScore >= 50 ? stickyFooter.moderateLeakStatus : stickyFooter.criticalLeakStatus}
                         </span>
                       </div>
                       <div className="w-full h-2 rounded-full bg-primary/10 overflow-hidden">
@@ -1121,7 +1160,7 @@ const LeakCalculator: React.FC = () => {
                         />
                       </div>
                       <p className="text-[11px] text-primary/50 mt-1.5">
-                        Your rate: {leakData.userAvgRate.toFixed(2)}% · Best available: {leakData.maxRate.toFixed(2)}%
+                        {stickyFooter.yourRate} {leakData.userAvgRate.toFixed(2)}% · {stickyFooter.bestAvailable} {leakData.maxRate.toFixed(2)}%
                       </p>
                     </div>
 
@@ -1195,15 +1234,15 @@ const LeakCalculator: React.FC = () => {
                       return (
                         <div>
                           <div className="flex items-center justify-between mb-3">
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-bold">5-Year Growth Projection</p>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-bold">{stickyFooter.projectionTitle}</p>
                             <div className="flex items-center gap-3">
                               <span className="flex items-center gap-1">
                                 <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#1dc96a' }} />
-                                <span className="text-[9px] text-primary/50 font-semibold">Best</span>
+                                <span className="text-[9px] text-primary/50 font-semibold">{stickyFooter.bestLabel}</span>
                               </span>
                               <span className="flex items-center gap-1">
                                 <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#f39c12' }} />
-                                <span className="text-[9px] text-primary/50 font-semibold">Yours</span>
+                                <span className="text-[9px] text-primary/50 font-semibold">{stickyFooter.yoursLabel}</span>
                               </span>
                             </div>
                           </div>
@@ -1335,7 +1374,7 @@ const LeakCalculator: React.FC = () => {
                                   className="fill-primary/40"
                                   style={{ fontSize: '7.5px', fontWeight: 600, fontFamily: 'Manrope, sans-serif', letterSpacing: '0.03em' }}
                                 >
-                                  {y === 0 ? 'Now' : `${y}Y`}
+                                  {y === 0 ? stickyFooter.nowLabel : `${y}${stickyFooter.yearsLabel}`}
                                 </text>
                               ))}
                             </svg>
@@ -1352,7 +1391,7 @@ const LeakCalculator: React.FC = () => {
                                 }}
                               >
                                 <p className="text-[9px] uppercase tracking-widest text-primary/50 font-bold mb-1">
-                                  {hoveredYear === 0 ? 'Starting' : `After ${hoveredYear} Year${hoveredYear > 1 ? 's' : ''}`}
+                                  {hoveredYear === 0 ? stickyFooter.startingLabel : stickyFooter.afterYearLabel.replace('{year}', String(hoveredYear))}
                                 </p>
                                 <div className="flex items-center gap-1.5 mb-0.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-[#1dc96a]" />
@@ -1364,7 +1403,7 @@ const LeakCalculator: React.FC = () => {
                                 </div>
                                 {hDiff > 0 && (
                                   <p className="text-[10px] font-bold text-orange-500 tabular-nums border-t border-primary/10 pt-1">
-                                    -{formatCurrencyValue(hDiff, leakData.currencyCode, language)} missed
+                                    -{formatCurrencyValue(hDiff, leakData.currencyCode, language)} {stickyFooter.missedLabel}
                                   </p>
                                 )}
                               </div>
@@ -1374,10 +1413,10 @@ const LeakCalculator: React.FC = () => {
                           {/* Summary below graph */}
                           <div className="mt-3 flex justify-between items-center text-[10px]">
                             <span className="text-primary/50 font-semibold">
-                              Total after 5 years at best rate: <span className="text-primary font-bold">{formatCurrencyValue(bestGrowth[5], leakData.currencyCode, language)}</span>
+                              {stickyFooter.totalAfter5Years} <span className="text-primary font-bold">{formatCurrencyValue(bestGrowth[5], leakData.currencyCode, language)}</span>
                             </span>
                             <span className="text-orange-500 font-bold tabular-nums">
-                              -{formatCurrencyValue(bestGrowth[5] - userGrowth[5], leakData.currencyCode, language)} over 5yr
+                              -{formatCurrencyValue(bestGrowth[5] - userGrowth[5], leakData.currencyCode, language)} {stickyFooter.over5Yr}
                             </span>
                           </div>
                         </div>
@@ -1389,7 +1428,9 @@ const LeakCalculator: React.FC = () => {
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-orange-50/80 border border-orange-200/50">
                         <span className="material-icons text-sm text-orange-500 mt-0.5">warning_amber</span>
                         <p className="text-[11px] text-orange-700/80 leading-relaxed font-medium">
-                          Deposits exceeding {INSURANCE_LIMITS[country as CountryCode]?.limit.toLocaleString()} {INSURANCE_LIMITS[country as CountryCode]?.currency} per bank are not covered by deposit insurance.
+                          {stickyFooter.insuranceWarning
+                            .replace('{limit}', INSURANCE_LIMITS[country as CountryCode]?.limit.toLocaleString())
+                            .replace('{currency}', INSURANCE_LIMITS[country as CountryCode]?.currency)}
                         </p>
                       </div>
                     )}
@@ -1401,23 +1442,64 @@ const LeakCalculator: React.FC = () => {
 
           {/* Submit / collapse */}
           <div className="mt-5 flex flex-col items-center gap-2">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="leak-submit-btn"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <span className="leak-dot-pulse" />
-                  {localizedUi.loading}
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <span className="material-icons text-lg">water_drop</span>
-                  {stickyFooter.leakButton}
-                </span>
-              )}
-            </button>
+            {leakStatus === 'ready' ? (
+              <div className="w-full max-w-sm flex flex-col gap-2 leak-slide-in mb-2 mt-2">
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setWaitlistStatus('idle');
+                      setWaitlistMessage('');
+                    }}
+                    disabled={isWaitlistSubmitting || waitlistStatus === 'success'}
+                    placeholder={stickyFooter.waitlistPlaceholder}
+                    className="flex-1 bg-white/90 border border-primary/20 rounded-2xl text-sm px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary/40 font-medium transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={submitWaitlist}
+                    disabled={isWaitlistSubmitting || waitlistStatus === 'success' || !email}
+                    className="bg-primary text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center min-w-[140px]"
+                  >
+                    {isWaitlistSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <span className="leak-dot-pulse bg-white/80" />
+                      </span>
+                    ) : waitlistStatus === 'success' ? (
+                      <span className="material-icons text-white text-lg">check</span>
+                    ) : (
+                      stickyFooter.waitlistButton
+                    )}
+                  </button>
+                </div>
+                {waitlistMessage && (
+                  <p className={`text-xs text-center font-medium ${waitlistStatus === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                    {waitlistMessage}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="leak-submit-btn"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="leak-dot-pulse" />
+                    {localizedUi.loading}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <span className="material-icons text-lg">water_drop</span>
+                    {stickyFooter.leakButton}
+                  </span>
+                )}
+              </button>
+            )}
             {isExpanded ? (
               <button
                 type="button"

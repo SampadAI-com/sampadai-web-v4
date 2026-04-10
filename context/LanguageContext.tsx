@@ -73,6 +73,8 @@ type TranslationContent = {
     bankLoading: string;
     bankFallback: string;
     bankSupabase: string;
+    bankEmpty: string;
+    signalsInside: string;
     amountLabel: string;
     amountPlaceholder: string;
     amountHelper: string;
@@ -90,6 +92,27 @@ type TranslationContent = {
     leakDescription: string;
     leakResultLabel: string;
     leakFallback: string;
+    optimal: string;
+    moderateLeakStatus: string;
+    criticalLeakStatus: string;
+    yourRate: string;
+    bestAvailable: string;
+    projectionTitle: string;
+    bestLabel: string;
+    yoursLabel: string;
+    nowLabel: string;
+    yearsLabel: string;
+    startingLabel: string;
+    afterYearLabel: string;
+    missedLabel: string;
+    totalAfter5Years: string;
+    over5Yr: string;
+    insuranceWarning: string;
+    waitlistPlaceholder: string;
+    waitlistButton: string;
+    waitlistSuccess: string;
+    insuranceNoteSafe: string;
+    insuranceNoteOverLimit: string;
   };
 };
 
@@ -206,6 +229,29 @@ const translations: Record<Language, TranslationContent> = {
         'A first look at what inflation and idle cash could be costing you each year.',
       leakResultLabel: 'Estimated annual leak',
       leakFallback: 'Leak insight will appear here once the data is connected.',
+      bankEmpty: 'No banks found for this country in the database.',
+      signalsInside: 'Live signals. Smarter decisions. SampadAI inside.',
+      optimal: 'Optimal',
+      moderateLeakStatus: 'Moderate Leak',
+      criticalLeakStatus: 'Critical',
+      yourRate: 'Your rate:',
+      bestAvailable: 'Best available:',
+      projectionTitle: '5-Year Growth Projection',
+      bestLabel: 'Best',
+      yoursLabel: 'Yours',
+      nowLabel: 'Now',
+      yearsLabel: 'Y',
+      startingLabel: 'Starting',
+      afterYearLabel: 'After {year} Year(s)',
+      missedLabel: 'missed',
+      totalAfter5Years: 'Total after 5 years at best rate:',
+      over5Yr: 'over 5yr',
+      insuranceWarning: 'Deposits exceeding {limit} {currency} per bank are not covered by deposit insurance.',
+      waitlistPlaceholder: 'Enter your email',
+      waitlistButton: 'Join Waitlist',
+      waitlistSuccess: 'Added to waitlist!',
+      insuranceNoteSafe: 'Your funds are within protected insurance limits.',
+      insuranceNoteOverLimit: 'Money above {limit} {currency} in a single bank is not insured.',
     },
   },
   de: {
@@ -310,6 +356,29 @@ const translations: Record<Language, TranslationContent> = {
         'Ein erster Blick darauf, was Inflation und ungenutztes Geld dich pro Jahr kosten könnten.',
       leakResultLabel: 'Geschätztes jährliches Leck',
       leakFallback: 'Sobald die Daten verbunden sind, erscheint hier dein Leak.',
+      bankEmpty: 'Keine Banken für dieses Land in der Datenbank gefunden.',
+      signalsInside: 'Live-Signale. Bessere Entscheidungen. SampadAI inside.',
+      optimal: 'Optimal',
+      moderateLeakStatus: 'Mittleres Leck',
+      criticalLeakStatus: 'Kritisch',
+      yourRate: 'Dein Zins:',
+      bestAvailable: 'Bester verfügbarer:',
+      projectionTitle: '5-Jahres-Wachstumsprognose',
+      bestLabel: 'Bester',
+      yoursLabel: 'Deiner',
+      nowLabel: 'Jetzt',
+      yearsLabel: 'J',
+      startingLabel: 'Zu Beginn',
+      afterYearLabel: 'Nach {year} Jahr(en)',
+      missedLabel: 'verpasst',
+      totalAfter5Years: 'Gesamt nach 5 Jahren zum besten Zinssatz:',
+      over5Yr: 'über 5J',
+      insuranceWarning: 'Einlagen über {limit} {currency} pro Bank sind nicht durch die Einlagensicherung gedeckt.',
+      waitlistPlaceholder: 'Gib deine E-Mail ein',
+      waitlistButton: 'Warteliste beitreten',
+      waitlistSuccess: 'Zur Warteliste hinzugefügt!',
+      insuranceNoteSafe: 'Dein Guthaben liegt innerhalb der gesetzlichen Einlagensicherung.',
+      insuranceNoteOverLimit: 'Geld über {limit} {currency} bei einer einzelnen Bank ist nicht abgesichert.',
     },
   },
   pl: {
@@ -414,6 +483,29 @@ const translations: Record<Language, TranslationContent> = {
         'Pierwsze spojrzenie na to, ile rocznie może kosztować Cię inflacja i niepracująca gotówka.',
       leakResultLabel: 'Szacowany roczny wyciek',
       leakFallback: 'Gdy dane będą podłączone, tutaj pojawi się Twój wyciek.',
+      bankEmpty: 'Nie znaleziono banków dla tego kraju w bazie danych.',
+      signalsInside: 'Sygnały na żywo. Lepsze decyzje. SampadAI w środku.',
+      optimal: 'Optymalnie',
+      moderateLeakStatus: 'Wyciek',
+      criticalLeakStatus: 'Krytyczny',
+      yourRate: 'Twoje oproc.:',
+      bestAvailable: 'Najlepsze dostępne:',
+      projectionTitle: 'Prognoza wzrostu na 5 lat',
+      bestLabel: 'Najlepszy',
+      yoursLabel: 'Twój',
+      nowLabel: 'Teraz',
+      yearsLabel: 'L',
+      startingLabel: 'Początek',
+      afterYearLabel: 'Po {year} latach/roku',
+      missedLabel: 'stracone',
+      totalAfter5Years: 'Suma po 5 latach przy najlepszym oprocentowaniu:',
+      over5Yr: 'przez 5 lat',
+      insuranceWarning: 'Depozyty przekraczające {limit} {currency} na bank nie są objęte gwarancją.',
+      waitlistPlaceholder: 'Wpisz swój email',
+      waitlistButton: 'Dołącz do listy',
+      waitlistSuccess: 'Dodano do listy!',
+      insuranceNoteSafe: 'Twoje środki mieszczą się w limitach gwarantowanych.',
+      insuranceNoteOverLimit: 'Pieniądze powyżej {limit} {currency} w jednym banku nie są ubezpieczone.',
     },
   },
 };
