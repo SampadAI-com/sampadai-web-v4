@@ -80,6 +80,24 @@ const bankTableCandidates: Record<CountryCode, string[]> = {
   GB: ['uk_bank', 'gb_bank', 'united_kingdom_bank', 'britain_bank'],
 };
 
+const INSURANCE_LIMITS: Record<CountryCode, { limit: number; currency: string }> = {
+  DE: { limit: 100000, currency: 'EUR' },
+  ES: { limit: 100000, currency: 'EUR' },
+  PL: { limit: 100000, currency: 'EUR' },
+  GB: { limit: 85000, currency: 'GBP' },
+  US: { limit: 250000, currency: 'USD' },
+};
+
+const getCountryTablePrefix = (country: CountryCode): string => {
+  return {
+    DE: 'germany',
+    PL: 'poland',
+    US: 'usa',
+    ES: 'spain',
+    GB: 'uk',
+  }[country] || country.toLowerCase();
+};
+
 const leakUiMessages: Record<
   Language,
   { loading: string; genericError: string; invalidAmount: string; missingFields: string }
@@ -195,7 +213,7 @@ const extractLeakValue = (payload: unknown, currencyCode: string | null, languag
   }
 
   const data = payload as Record<string, unknown>;
-  const candidate = data.leak ?? data.value ?? data.amount ?? data.estimate;
+  const candidate = data.annualLeak ?? data.leak ?? data.value ?? data.amount ?? data.estimate;
   if (typeof candidate === 'number') {
     return currencyCode ? formatCurrencyValue(candidate, currencyCode, language) : candidate.toFixed(2);
   }
@@ -655,54 +673,72 @@ const LeakCalculator: React.FC = () => {
     };
 
     try {
-      let score = 0;
+      let score = 50;
+      let annualLeak = 0;
+      let finalNote = stickyFooter.leakDescription;
+
       try {
-        const response = await fetch('/api/leak', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            country,
-            banks: parsedEntries.map((entry) => ({
-              bankId: entry.bankId,
-              amount: entry.parsedAmount as number,
-            })),
-          }),
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        const tablePrefix = getCountryTablePrefix(country);
+        const interestTable = `${tablePrefix}_interest_rates`;
+        
+        // Use client-side logic to ensure it works in Vite dev without vercel api support
+        const { data: ratesData, error: ratesError } = await supabase
+          .from(interestTable)
+          .select('*');
+
+        if (ratesError || !ratesData || ratesData.length === 0) {
+          throw new Error('Could not fetch rates');
+        }
+
+        const maxRate = Math.max(...ratesData.map(r => r.interest_rate || r.rate || 0), 0.01);
+        
+        let totalAmount = 0;
+        let weightedYield = 0;
+        let overLimitAmount = 0;
+        const limitInfo = INSURANCE_LIMITS[country] || { limit: 100000, currency: 'EUR' };
+
+        parsedEntries.forEach((userBank) => {
+          const amount = userBank.parsedAmount || 0;
+          totalAmount += amount;
+
+          const bankData = ratesData.find(r => 
+            String(r.id) === String(userBank.bankId) || 
+            String(r.bank_id) === String(userBank.bankId)
+          );
+
+          const rate = bankData ? (bankData.interest_rate || bankData.rate || 0) : 0;
+          weightedYield += (rate * amount);
+
+          if (amount > limitInfo.limit) {
+            overLimitAmount += (amount - limitInfo.limit);
+          }
         });
 
-        let payload: unknown = null;
-        try {
-          payload = await response.json();
-        } catch {
-          payload = null;
-        }
+        const userAvgRate = totalAmount > 0 ? (weightedYield / totalAmount) : 0;
+        annualLeak = (maxRate - userAvgRate) * (totalAmount / 100);
 
-        if (response.ok) {
-          const value = extractLeakValue(payload, currency?.code ?? null, language);
-          const payloadObject =
-            payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
-          const note =
-            payloadObject && typeof payloadObject.note === 'string'
-              ? payloadObject.note
-              : stickyFooter.leakDescription;
+        const yieldEfficiency = maxRate > 0 ? (userAvgRate / maxRate) : 0;
+        const yieldScore = yieldEfficiency * 100;
 
-          setLeakStatus('ready');
-          setLeakValue(value || '---');
-          setLeakNote(note);
-          score = parseLeakScore(payload, value || '0') ?? 75;
-        } else {
-          // Fallback for missing API since logic is "later"
-          setLeakStatus('pending');
-          setLeakValue('---');
-          setLeakNote(stickyFooter.leakFallback);
-          score = Math.floor(Math.random() * 40) + 40; // Random moderate score for demo
-        }
-      } catch {
+        const safetyRatio = totalAmount > 0 ? (overLimitAmount / totalAmount) : 0;
+        const safetyScore = Math.max(0, 100 - (safetyRatio * 150));
+
+        score = Math.round((yieldScore * 0.6) + (safetyScore * 0.4));
+        finalNote = overLimitAmount > 0 
+          ? `Money above ${limitInfo.limit.toLocaleString()} ${limitInfo.currency} in a single bank is not insured.`
+          : 'Your funds are within protected insurance limits.';
+
+        setLeakStatus('ready');
+        setLeakValue(formatCurrencyValue(annualLeak, limitInfo.currency, language));
+        setLeakNote(finalNote);
+      } catch (err) {
+        console.warn('Frontend algorithm fallback active:', err);
         setLeakStatus('pending');
         setLeakValue('---');
         setLeakNote(stickyFooter.leakFallback);
-        score = Math.floor(Math.random() * 30) + 30; // Random low score for demo
+        score = 45;
       }
 
       setLeakScore(score);
