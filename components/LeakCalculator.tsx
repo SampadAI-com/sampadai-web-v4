@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { type Language, useLanguage } from '../context/LanguageContext';
 
 type CountryCode = 'DE' | 'PL' | 'US' | 'ES' | 'GB';
@@ -8,13 +9,19 @@ type BankOption = {
   name: string;
 };
 
-type BankSource = 'idle' | 'fallback' | 'api';
+type BankSource = 'idle' | 'supabase';
 type LeakStatus = 'idle' | 'loading' | 'ready' | 'pending';
 type BankEntry = {
   id: string;
   bankId: string;
   amount: string;
 };
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const supabase =
+  supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 const countryOptions: Record<Language, { code: CountryCode; label: string }[]> = {
   en: [
@@ -40,38 +47,6 @@ const countryOptions: Record<Language, { code: CountryCode; label: string }[]> =
   ],
 };
 
-const fallbackBanksByCountry: Record<CountryCode, BankOption[]> = {
-  DE: [
-    { id: 'deutsche-bank', name: 'Deutsche Bank' },
-    { id: 'commerzbank', name: 'Commerzbank' },
-    { id: 'sparkasse', name: 'Sparkasse' },
-    { id: 'n26', name: 'N26' },
-  ],
-  PL: [
-    { id: 'pko-bp', name: 'PKO Bank Polski' },
-    { id: 'mbank', name: 'mBank' },
-    { id: 'santander-pl', name: 'Santander Bank Polska' },
-    { id: 'ing-pl', name: 'ING Bank Slaski' },
-  ],
-  US: [
-    { id: 'chase', name: 'Chase' },
-    { id: 'bofa', name: 'Bank of America' },
-    { id: 'wells-fargo', name: 'Wells Fargo' },
-    { id: 'citi', name: 'Citi' },
-  ],
-  ES: [
-    { id: 'santander-es', name: 'Banco Santander' },
-    { id: 'bbva', name: 'BBVA' },
-    { id: 'caixabank', name: 'CaixaBank' },
-    { id: 'sabadell', name: 'Banco Sabadell' },
-  ],
-  GB: [
-    { id: 'barclays', name: 'Barclays' },
-    { id: 'hsbc', name: 'HSBC' },
-    { id: 'lloyds', name: 'Lloyds Bank' },
-    { id: 'natwest', name: 'NatWest' },
-  ],
-};
 
 const currencyByCountry: Record<CountryCode, { symbol: string; code: string }> = {
   DE: { symbol: '€', code: 'EUR' },
@@ -79,6 +54,30 @@ const currencyByCountry: Record<CountryCode, { symbol: string; code: string }> =
   PL: { symbol: 'zł', code: 'PLN' },
   US: { symbol: '$', code: 'USD' },
   GB: { symbol: '£', code: 'GBP' },
+};
+
+const flagByCountry: Record<CountryCode, string> = {
+  DE: 'https://flagcdn.com/w80/de.png',
+  ES: 'https://flagcdn.com/w80/es.png',
+  PL: 'https://flagcdn.com/w80/pl.png',
+  US: 'https://flagcdn.com/w80/us.png',
+  GB: 'https://flagcdn.com/w80/gb.png',
+};
+
+const bankLogoTableCandidates: Record<CountryCode, string[]> = {
+  DE: ['germany_bank_logo', 'de_bank_logo', 'german_bank_logo'],
+  PL: ['poland_bank_logo', 'pl_bank_logo'],
+  US: ['usa_bank_logo', 'us_bank_logo', 'united_states_bank_logo', 'america_bank_logo'],
+  ES: ['spain_bank_logo', 'es_bank_logo'],
+  GB: ['uk_bank_logo', 'gb_bank_logo', 'united_kingdom_bank_logo', 'britain_bank_logo'],
+};
+
+const bankTableCandidates: Record<CountryCode, string[]> = {
+  DE: ['germany_bank', 'de_bank', 'german_bank'],
+  PL: ['poland_bank', 'pl_bank'],
+  US: ['usa_bank', 'us_bank', 'united_states_bank', 'america_bank'],
+  ES: ['spain_bank', 'es_bank'],
+  GB: ['uk_bank', 'gb_bank', 'united_kingdom_bank', 'britain_bank'],
 };
 
 const leakUiMessages: Record<
@@ -129,15 +128,23 @@ const normalizeBanks = (payload: unknown): BankOption[] => {
       }
 
       if (typeof bank === 'object' && bank) {
-        const candidate = bank as { id?: unknown; name?: unknown };
-        const name = typeof candidate.name === 'string' ? candidate.name.trim() : '';
+        const candidate = bank as Record<string, unknown>;
+        const name =
+          (typeof candidate.name === 'string' && candidate.name.trim()) ||
+          (typeof candidate.bank_name === 'string' && candidate.bank_name.trim()) ||
+          (typeof candidate.title === 'string' && candidate.title.trim()) ||
+          '';
         if (!name) {
           return null;
         }
-        const id =
-          typeof candidate.id === 'string' && candidate.id.trim().length > 0
-            ? candidate.id.trim()
-            : name.toLowerCase().replace(/\s+/g, '-');
+        const extractId = (val: unknown): string => {
+          if (typeof val === 'string') return val.trim();
+          if (typeof val === 'number') return String(val);
+          return '';
+        };
+
+        const idCandidate = extractId(candidate.id) || extractId(candidate.bank_id) || extractId(candidate.slug);
+        const id = idCandidate.length > 0 ? idCandidate : name.toLowerCase().replace(/\s+/g, '-');
         return { id, name };
       }
 
@@ -233,6 +240,54 @@ const parseLeakScore = (payload: unknown, leakValue: string): number | null => {
   return null;
 };
 
+const normalizeKey = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
+const readRowString = (row: Record<string, unknown>, keys: string[]): string | null => {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
+    if (typeof value === 'number') {
+      return String(value);
+    }
+  }
+  return null;
+};
+
+const buildLogoKeyMap = (rows: Record<string, unknown>[]): Record<string, string> => {
+  const map: Record<string, string> = {};
+  rows.forEach((row) => {
+    const id = readRowString(row, ['bank_id', 'bankId', 'id', 'slug', 'code']);
+    const name = readRowString(row, ['bank_name', 'name', 'bank', 'title']);
+    const logoUrl = readRowString(row, [
+      'raw_public_url',
+      'logo_url',
+      'logo',
+      'logoUrl',
+      'image_url',
+      'imageUrl',
+      'public_url',
+      'url',
+      'path',
+    ]);
+
+    if (!logoUrl) {
+      return;
+    }
+
+    const key = id ? normalizeKey(id) : name ? normalizeKey(name) : null;
+    if (key && !map[key]) {
+      map[key] = logoUrl;
+    }
+  });
+  return map;
+};
+
 const clamp = (value: number, min: number, max: number): number => {
   if (value < min) {
     return min;
@@ -294,7 +349,7 @@ const getThemeColorForScore = (score: number): string => {
   return stops[stops.length - 1].color;
 };
 
-const StickyFooter: React.FC = () => {
+const LeakCalculator: React.FC = () => {
   const { language, messages } = useLanguage();
   const { stickyFooter } = messages;
   const localizedUi = leakUiMessages[language];
@@ -304,6 +359,8 @@ const StickyFooter: React.FC = () => {
   const [banks, setBanks] = useState<BankOption[]>([]);
   const [bankSource, setBankSource] = useState<BankSource>('idle');
   const [isFetchingBanks, setIsFetchingBanks] = useState(false);
+  const [logoRows, setLogoRows] = useState<Record<string, unknown>[]>([]);
+  const [isFetchingLogos, setIsFetchingLogos] = useState(false);
   const [bankEntries, setBankEntries] = useState<BankEntry[]>([
     { id: 'bank-entry-1', bankId: '', amount: '' },
   ]);
@@ -314,9 +371,11 @@ const StickyFooter: React.FC = () => {
   const [leakStatus, setLeakStatus] = useState<LeakStatus>('idle');
   const [leakValue, setLeakValue] = useState('');
   const [leakNote, setLeakNote] = useState('');
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const [leakScore, setLeakScore] = useState<number | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+  const cardRef = React.useRef<HTMLDivElement>(null);
   const confettiPieces = useMemo(() => {
     if (!showOverlay) {
       return [];
@@ -338,6 +397,25 @@ const StickyFooter: React.FC = () => {
   }, [showOverlay, leakScore]);
 
   const currency = useMemo(() => (country ? currencyByCountry[country] : null), [country]);
+  const bankLogoMap = useMemo(() => {
+    if (logoRows.length === 0) {
+      return {};
+    }
+
+    const keyMap = buildLogoKeyMap(logoRows);
+    const mapped: Record<string, string> = {};
+
+    banks.forEach((bank) => {
+      const idKey = normalizeKey(bank.id);
+      const nameKey = normalizeKey(bank.name);
+      const logo = keyMap[idKey] ?? keyMap[nameKey];
+      if (logo) {
+        mapped[bank.id] = logo;
+      }
+    });
+
+    return mapped;
+  }, [banks, logoRows]);
 
   useEffect(() => {
     if (!country) {
@@ -345,6 +423,8 @@ const StickyFooter: React.FC = () => {
       setBankSource('idle');
       setIsFetchingBanks(false);
       setBankEntries([{ id: 'bank-entry-1', bankId: '', amount: '' }]);
+      setLogoRows([]);
+      setIsFetchingLogos(false);
       setLeakStatus('idle');
       setLeakValue('');
       setLeakNote('');
@@ -352,41 +432,87 @@ const StickyFooter: React.FC = () => {
     }
 
     let cancelled = false;
-    const fallback = fallbackBanksByCountry[country] ?? [];
-
-    setBanks(fallback);
-    setBankSource('fallback');
-    setIsFetchingBanks(true);
-    setBankEntries([{ id: `bank-entry-${Date.now()}`, bankId: '', amount: '' }]);
-    setLeakStatus('idle');
-    setLeakValue('');
-    setLeakNote('');
-
     const loadBanks = async () => {
-      try {
-        const response = await fetch(`/api/banks?country=${country}`);
-        if (!response.ok) {
-          throw new Error('Bank fetch failed');
-        }
+      if (!supabase) {
+        return;
+      }
+      
+      setBankSource('idle');
+      setIsFetchingBanks(true);
+      setBanks([]);
+      setBankEntries([{ id: `bank-entry-${Date.now()}`, bankId: '', amount: '' }]);
+      setLeakStatus('idle');
+      setLeakValue('');
+      setLeakNote('');
 
-        const payload: unknown = await response.json();
-        const normalized = normalizeBanks(payload);
-        if (!cancelled && normalized.length > 0) {
-          setBanks(normalized);
-          setBankSource('api');
-        }
-      } catch {
-        if (!cancelled) {
-          setBankSource('fallback');
-        }
-      } finally {
-        if (!cancelled) {
-          setIsFetchingBanks(false);
+      const tables = bankTableCandidates[country] ?? [];
+      for (const table of tables) {
+        try {
+          const { data, error } = await supabase.from(table).select('*');
+          if (error || !Array.isArray(data) || data.length === 0) {
+            continue;
+          }
+          const normalized = normalizeBanks(data);
+          if (!cancelled && normalized.length > 0) {
+            setBanks(normalized);
+            setBankSource('supabase');
+            return;
+          }
+        } catch {
+          // Try next table.
         }
       }
     };
 
-    loadBanks();
+    loadBanks()
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) {
+          setIsFetchingBanks(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [country]);
+
+  useEffect(() => {
+    if (!country || !supabase) {
+      setLogoRows([]);
+      setIsFetchingLogos(false);
+      return;
+    }
+
+    let cancelled = false;
+    const tables = bankLogoTableCandidates[country] ?? [];
+
+    const loadLogos = async () => {
+      setIsFetchingLogos(true);
+      setLogoRows([]);
+
+      for (const table of tables) {
+        try {
+          const { data, error } = await supabase.from(table).select('*');
+          if (!error && Array.isArray(data) && data.length > 0) {
+            if (!cancelled) {
+              setLogoRows(data as Record<string, unknown>[]);
+            }
+            return;
+          }
+        } catch {
+          // Try next table candidate.
+        }
+      }
+    };
+
+    loadLogos()
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) {
+          setIsFetchingLogos(false);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -397,6 +523,21 @@ const StickyFooter: React.FC = () => {
     setCountry(event.target.value as CountryCode);
     setFeedbackStatus('idle');
     setFeedbackMessage('');
+  };
+
+  const handleCountrySelect = (code: CountryCode) => {
+    setCountry(code);
+    setFeedbackStatus('idle');
+    setFeedbackMessage('');
+  };
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setMousePos({
+      x: ((event.clientX - rect.left) / rect.width) * 100,
+      y: ((event.clientY - rect.top) / rect.height) * 100,
+    });
   };
 
   const updateBankEntry = (entryId: string, next: Partial<BankEntry>) => {
@@ -533,19 +674,16 @@ const StickyFooter: React.FC = () => {
     }
   };
 
-  const stepBase =
-    'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.18em] font-bold';
-  const stepActive = 'border-primary/30 bg-primary/10 text-primary';
-  const stepInactive = 'border-primary/10 bg-white/60 text-primary/50';
   const labelClass = 'text-[11px] uppercase tracking-[0.2em] text-primary/60 font-bold';
   const controlClass =
     'w-full bg-white/90 border border-primary/10 rounded-2xl text-sm px-4 sm:px-5 py-3 sm:py-3.5 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 font-semibold transition-all min-w-0';
 
   const expandPanelClass = isExpanded
-    ? 'max-h-[720px] opacity-100 translate-y-0'
+    ? 'max-h-[1200px] opacity-100 translate-y-0'
     : 'max-h-0 opacity-0 -translate-y-2 pointer-events-none';
   const hasAnyBank = bankEntries.some((entry) => entry.bankId);
   const hasAnyAmount = bankEntries.some((entry) => entry.amount.trim());
+  const completedSteps = [!!country, hasAnyBank, hasAnyAmount].filter(Boolean).length;
   const leakMessage =
     leakScore === null
       ? ''
@@ -566,11 +704,32 @@ const StickyFooter: React.FC = () => {
     backgroundImage: `radial-gradient(circle at 20% 20%, ${overlayLight} 0%, rgba(0,0,0,0) 55%),\nradial-gradient(circle at 80% 30%, ${overlayBaseColor} 0%, rgba(0,0,0,0) 55%),\nradial-gradient(circle at 40% 80%, ${overlayDark} 0%, rgba(0,0,0,0) 60%)`,
     opacity: 0.6,
   };
+  const glowStyle = {
+    background: `radial-gradient(600px circle at ${mousePos.x}% ${mousePos.y}%, rgba(29,201,106,0.08) 0%, transparent 60%)`,
+  };
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4 md:p-8 pointer-events-none">
-      <div className="max-w-5xl mx-auto bg-white/90 luxury-blur rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] border border-primary/10 p-4 md:p-6 flex flex-col items-center gap-4 pointer-events-auto">
-        <div className="w-full flex flex-col items-center gap-2 px-2 sm:px-6 text-center">
+    <section className="relative w-full px-4 pb-16 sm:px-6">
+      <div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        className="leak-card relative mx-auto w-full max-w-5xl rounded-[2.8rem] border border-primary/10 bg-white/90 p-5 sm:p-6 md:p-8 shadow-[0_35px_80px_-25px_rgba(0,0,0,0.2)] luxury-blur flex flex-col items-center gap-4 overflow-hidden group focus-within:shadow-[0_40px_90px_-20px_rgba(29,201,106,0.25)] transition-all"
+      >
+        {/* Interactive animated background orbs */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="leak-orb leak-orb-1" />
+          <div className="leak-orb leak-orb-2" />
+          <div className="leak-orb leak-orb-3" />
+          <div className="leak-orb leak-orb-4" />
+          <div className="leak-orb leak-orb-5" />
+          <div className="absolute inset-0 rounded-[2.8rem] border border-white/40" />
+          {/* Mouse-tracking glow */}
+          <div className="absolute inset-0 rounded-[2.8rem] transition-opacity duration-300 opacity-0 group-hover:opacity-100" style={glowStyle} />
+        </div>
+
+        <div className="relative w-full">
+        {/* Header section */}
+        <div className="w-full flex flex-col items-center gap-3 px-2 sm:px-6 text-center mb-6">
           <div>
             <span className="text-[10px] uppercase tracking-[0.25em] text-primary font-black block mb-1">
               {stickyFooter.membershipLabel}
@@ -585,139 +744,212 @@ const StickyFooter: React.FC = () => {
           <p className="max-w-2xl text-sm md:text-base font-medium opacity-70 italic leading-tight">
             {stickyFooter.quote}
           </p>
+
+          {/* Progress indicator */}
+          <div className="flex items-center gap-2 mt-2">
+            {[0, 1, 2].map((step) => (
+              <React.Fragment key={step}>
+                <div
+                  className={`leak-step-dot ${
+                    completedSteps > step ? 'leak-step-dot-active' : ''
+                  }`}
+                >
+                  {completedSteps > step ? (
+                    <span className="material-icons text-[12px]">check</span>
+                  ) : (
+                    <span className="text-[10px] font-black">{step + 1}</span>
+                  )}
+                </div>
+                {step < 2 ? (
+                  <div className={`h-px w-8 transition-colors duration-500 ${
+                    completedSteps > step ? 'bg-primary/40' : 'bg-primary/10'
+                  }`} />
+                ) : null}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
-        <form onSubmit={submitLeak} className="w-full max-w-4xl">
+        <form onSubmit={submitLeak} className="w-full max-w-4xl mx-auto">
           <div
             className={`overflow-hidden transition-[max-height,opacity,transform] duration-500 ease-out ${expandPanelClass}`}
           >
-            <div className="hidden sm:flex flex-wrap items-center justify-center gap-2 mb-3">
-              <span className={`${stepBase} ${country ? stepActive : stepInactive}`}>
-                1 {stickyFooter.countryLabel}
-              </span>
-              <span className={`${stepBase} ${hasAnyBank ? stepActive : stepInactive}`}>
-                2 {stickyFooter.bankLabel}
-              </span>
-              <span className={`${stepBase} ${hasAnyAmount ? stepActive : stepInactive}`}>
-                3 {stickyFooter.amountLabel}
-              </span>
-            </div>
-
-            <div className="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-3 items-start">
-              <label className="flex flex-col gap-2">
-                <span className={labelClass}>{stickyFooter.countryLabel}</span>
-                <select
-                  className={controlClass}
-                  value={country}
-                  onChange={handleCountryChange}
-                  disabled={isSubmitting}
-                >
-                  <option value="">{stickyFooter.countryPlaceholder}</option>
-                  {countries.map((item) => (
-                    <option key={item.code} value={item.code}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="min-h-[14px] text-[11px] font-semibold text-primary/50">
-                  {'\u00A0'}
-                </div>
-              </label>
-
-              <div className="flex flex-col gap-3 sm:col-span-1 xl:col-span-2">
-                {bankEntries.map((entry, index) => (
-                  <div
-                    key={entry.id}
-                    className="grid gap-3 sm:grid-cols-[minmax(190px,1.1fr)_minmax(160px,1fr)_auto] items-start"
-                  >
-                    <label className="flex flex-col gap-2">
-                      <span className={`${labelClass} ${index === 0 ? '' : 'sr-only'}`}>
-                        {stickyFooter.bankLabel}
-                      </span>
-                      <select
-                        className={controlClass}
-                        value={entry.bankId}
-                        onChange={(event) => updateBankEntry(entry.id, { bankId: event.target.value })}
-                        disabled={!country || isSubmitting}
-                      >
-                        <option value="">{stickyFooter.bankPlaceholder}</option>
-                        {banks.map((bank) => {
-                          const isSelectedElsewhere = bankEntries.some(
-                            (other) => other.id !== entry.id && other.bankId === bank.id
-                          );
-                          return (
-                            <option key={bank.id} value={bank.id} disabled={isSelectedElsewhere}>
-                              {bank.name}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </label>
-
-                    <label className="flex flex-col gap-2">
-                      <span className={`${labelClass} ${index === 0 ? '' : 'sr-only'}`}>
-                        {stickyFooter.amountLabel}
-                      </span>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-primary/60">
-                          {currency ? currency.symbol : '€'}
-                        </span>
-                        <input
-                          className={`${controlClass} pr-14 amount-input`}
-                          placeholder={stickyFooter.amountPlaceholder}
-                          type="text"
-                          inputMode="decimal"
-                          value={entry.amount}
-                          onChange={(event) => updateBankEntry(entry.id, { amount: event.target.value })}
-                          disabled={!entry.bankId || isSubmitting}
+            {/* ─── STEP 1: Country Picker ─── */}
+            <div className="mb-6">
+              <span className={`${labelClass} block mb-3`}>{stickyFooter.countryLabel}</span>
+              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+                {countries.map((item) => {
+                  const isActive = country === item.code;
+                  return (
+                    <button
+                      key={item.code}
+                      type="button"
+                      onClick={() => handleCountrySelect(item.code)}
+                      disabled={isSubmitting}
+                      className={`leak-country-card ${
+                        isActive ? 'leak-country-card-active' : ''
+                      }`}
+                    >
+                      <div className="leak-country-flag">
+                        <img
+                          src={flagByCountry[item.code]}
+                          alt={`${item.label} flag`}
+                          className="h-full w-full object-cover"
                         />
-                        {currency ? (
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-primary/60">
-                            {currency.code}
-                          </span>
-                        ) : null}
                       </div>
-                    </label>
-
-                    <div className="flex flex-col gap-2">
-                      <span
-                        className={`${labelClass} text-transparent ${index === 0 ? '' : 'sr-only'}`}
-                        aria-hidden="true"
-                      >
-                        {'\u00A0'}
+                      <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-tight text-center">
+                        {item.label}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => removeBankEntry(entry.id)}
-                        disabled={bankEntries.length === 1}
-                        className="h-[46px] rounded-2xl border border-primary/20 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 transition hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        {stickyFooter.removeBankButton}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="flex flex-wrap items-center gap-2 min-h-[14px] text-[11px] font-semibold text-primary/50">
-                  <span className={isFetchingBanks ? '' : 'text-transparent'}>
-                    {isFetchingBanks ? stickyFooter.bankLoading : '\u00A0'}
-                  </span>
-                  <span className={bankSource === 'fallback' ? '' : 'text-transparent'}>
-                    {bankSource === 'fallback' ? stickyFooter.bankFallback : '\u00A0'}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={addBankEntry}
-                  className="self-start rounded-full border border-primary/30 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-primary/70 transition hover:border-primary/50 hover:text-primary"
-                >
-                  {stickyFooter.addBankButton}
-                </button>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="mt-3 flex w-full flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+            {/* ─── STEP 2 & 3: Bank + Amount Cards ─── */}
+            {country ? (
+              <div className="flex flex-col gap-4 leak-slide-in">
+                {bankEntries.map((entry, index) => {
+                  const selectedBank = banks.find((bank) => bank.id === entry.bankId);
+                  const logoUrl = entry.bankId ? bankLogoMap[entry.bankId] : null;
+                  const fallbackLetter = selectedBank?.name?.charAt(0)?.toUpperCase() ?? '';
+
+                  return (
+                    <div
+                      key={entry.id}
+                      className="leak-bank-card"
+                    >
+                      {/* Bank logo / avatar */}
+                      <div className="flex gap-4">
+                        <div className="flex flex-col">
+                          <span className={`block mb-1.5 ${index === 0 ? 'min-h-[16.5px]' : 'sr-only'} select-none`}>&nbsp;</span>
+                          <div className="leak-bank-logo -mt-[2px]">
+                          {isFetchingBanks || isFetchingLogos ? (
+                            <div className="leak-shimmer h-full w-full rounded-2xl" />
+                          ) : logoUrl ? (
+                            <img
+                              src={logoUrl}
+                              alt={selectedBank?.name ?? 'Bank logo'}
+                              className="h-full w-full object-contain bg-white/60 p-1.5 transition-all hover:scale-105"
+                              style={{ borderRadius: '16px' }}
+                            />
+                          ) : (
+                            <>
+                              {fallbackLetter ? (
+                                <span className="text-lg font-bold text-primary/70">
+                                  {fallbackLetter}
+                                </span>
+                              ) : (
+                                <span className="material-icons text-primary/40 text-xl">
+                                  account_balance
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex-1 min-w-0 flex flex-col sm:flex-row gap-3">
+                          {/* Bank select */}
+                          <div className="flex-1 min-w-0">
+                            <span className={`${labelClass} block mb-1.5 ${index === 0 ? '' : 'sr-only'}`}>
+                              {stickyFooter.bankLabel}
+                            </span>
+                            <select
+                              className={`${controlClass} flex-1`}
+                              value={entry.bankId}
+                              onChange={(event) => updateBankEntry(entry.id, { bankId: event.target.value })}
+                              disabled={!country || isSubmitting}
+                            >
+                              <option value="">{stickyFooter.bankPlaceholder}</option>
+                              {banks.map((bank) => {
+                                const isSelectedElsewhere = bankEntries.some(
+                                  (other) => other.id !== entry.id && other.bankId === bank.id
+                                );
+                                return (
+                                  <option key={bank.id} value={bank.id} disabled={isSelectedElsewhere}>
+                                    {bank.name}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+
+                          {/* Amount input */}
+                          <div className="flex-1 min-w-0">
+                            <span className={`${labelClass} block mb-1.5 ${index === 0 ? '' : 'sr-only'}`}>
+                              {stickyFooter.amountLabel}
+                            </span>
+                            <div className="relative">
+                              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-primary/60">
+                                {currency ? currency.symbol : '€'}
+                              </span>
+                              <input
+                                className={`${controlClass} pr-14 amount-input`}
+                                placeholder={stickyFooter.amountPlaceholder}
+                                type="text"
+                                inputMode="decimal"
+                                value={entry.amount}
+                                onChange={(event) => updateBankEntry(entry.id, { amount: event.target.value })}
+                                disabled={!entry.bankId || isSubmitting}
+                              />
+                              {currency ? (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-primary/60">
+                                  {currency.code}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          {/* Remove button */}
+                          <div className="flex items-end">
+                            <button
+                              type="button"
+                              onClick={() => removeBankEntry(entry.id)}
+                              disabled={bankEntries.length === 1}
+                              className="h-[46px] w-[46px] rounded-2xl border border-primary/15 flex items-center justify-center text-primary/50 transition hover:border-red-300 hover:text-red-400 hover:bg-red-50/50 disabled:cursor-not-allowed disabled:opacity-30"
+                              title={stickyFooter.removeBankButton}
+                            >
+                              <span className="material-icons text-lg">close</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Bank source status */}
+                <div className="flex flex-wrap items-center gap-2 min-h-[14px] text-[11px] font-semibold text-primary/50 px-1">
+                  {isFetchingBanks ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="leak-dot-pulse" />
+                      {stickyFooter.bankLoading}
+                    </span>
+                  ) : bankSource === 'supabase' ? (
+                    <span className="flex items-center gap-1.5 opacity-60">
+                      <span className="material-icons text-[14px]">cloud_done</span>
+                      Live signals. Smarter decisions. SampadAI inside.
+                    </span>
+                  ) : banks.length === 0 ? (
+                    <span className="text-red-400">No banks found for this country in the database.</span>
+                  ) : null}
+                </div>
+
+                {/* Add bank button */}
+                <button
+                  type="button"
+                  onClick={addBankEntry}
+                  className="self-start rounded-2xl border border-dashed border-primary/25 px-5 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary/60 transition-all hover:border-primary/50 hover:text-primary hover:bg-primary/5 flex items-center gap-2"
+                >
+                  <span className="material-icons text-base">add</span>
+                  {stickyFooter.addBankButton}
+                </button>
+              </div>
+            ) : null}
+
+            {/* Feedback area */}
+            <div className="mt-4 flex w-full flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
               <span className="text-primary/60 text-left">{stickyFooter.amountHelper}</span>
               <span
                 aria-live="polite"
@@ -729,8 +961,9 @@ const StickyFooter: React.FC = () => {
               </span>
             </div>
 
+            {/* Leak result inline */}
             {leakStatus !== 'idle' ? (
-              <div className="mt-3 rounded-2xl border border-primary/10 bg-white/70 p-4 backdrop-blur text-center sm:text-left">
+              <div className="mt-4 rounded-2xl border border-primary/10 bg-gradient-to-br from-white/80 to-primary/5 p-5 backdrop-blur text-center sm:text-left leak-slide-in">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold">
@@ -747,7 +980,7 @@ const StickyFooter: React.FC = () => {
                       <span className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold block">
                         {stickyFooter.leakResultLabel}
                       </span>
-                      <span className="text-lg font-black text-primary block">{leakValue}</span>
+                      <span className="text-2xl font-black text-primary block">{leakValue}</span>
                     </div>
                   ) : null}
                 </div>
@@ -755,13 +988,24 @@ const StickyFooter: React.FC = () => {
             ) : null}
           </div>
 
-          <div className="mt-3 flex flex-col items-center gap-2">
+          {/* Submit / collapse */}
+          <div className="mt-5 flex flex-col items-center gap-2">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full max-w-sm bg-primary hover:bg-primary/90 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl text-sm font-bold tracking-tight transition-all active:scale-95 shadow-xl shadow-primary/20 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-80"
+              className="leak-submit-btn"
             >
-              {isSubmitting ? localizedUi.loading : stickyFooter.leakButton}
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <span className="leak-dot-pulse" />
+                  {localizedUi.loading}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <span className="material-icons text-lg">water_drop</span>
+                  {stickyFooter.leakButton}
+                </span>
+              )}
             </button>
             {isExpanded ? (
               <button
@@ -774,6 +1018,7 @@ const StickyFooter: React.FC = () => {
             ) : null}
           </div>
         </form>
+      </div>
       </div>
       {showOverlay ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-6 pointer-events-auto">
@@ -814,8 +1059,8 @@ const StickyFooter: React.FC = () => {
           </div>
         </div>
       ) : null}
-    </footer>
+    </section>
   );
 };
 
-export default StickyFooter;
+export default LeakCalculator;

@@ -18,12 +18,14 @@ type TranslationContent = {
     philosophy: string;
     nudge: string;
     safety: string;
+    leak: string;
   };
   hero: {
     titleLine1: string;
     titleLine2: string;
     titleEmphasis: string;
     scrollPrompt: string;
+    buttonLabel: string;
   };
   philosophy: {
     line1PartBeforeHighlight: string;
@@ -49,6 +51,16 @@ type TranslationContent = {
     headingLine2: string;
     descriptionLine1: string;
     descriptionLine2: string;
+    buttonLabel: string;
+  };
+  leakPage: {
+    eyebrow: string;
+    titleLine1: string;
+    titleLine2: string;
+    description: string;
+    backLink: string;
+    reassurance: string;
+    footerNote: string;
   };
   stickyFooter: {
     membershipLabel: string;
@@ -60,6 +72,7 @@ type TranslationContent = {
     bankPlaceholder: string;
     bankLoading: string;
     bankFallback: string;
+    bankSupabase: string;
     amountLabel: string;
     amountPlaceholder: string;
     amountHelper: string;
@@ -96,12 +109,14 @@ const translations: Record<Language, TranslationContent> = {
       philosophy: 'Our Philosophy',
       nudge: 'The Nudge',
       safety: 'Safety',
+      leak: 'Leak Calculator',
     },
     hero: {
       titleLine1: 'Does your bank account',
       titleLine2: 'make you',
       titleEmphasis: 'feel safe?',
       scrollPrompt: 'Scroll to begin your journey',
+      buttonLabel: 'Reveal your leak',
     },
     philosophy: {
       line1PartBeforeHighlight: 'Most financial apps focus on ',
@@ -149,6 +164,18 @@ const translations: Record<Language, TranslationContent> = {
       headingLine2: 'relationship with money?',
       descriptionLine1: 'Join 15,000+ women who are redefining what it means',
       descriptionLine2: 'to be financially secure.',
+      buttonLabel: 'Reveal your leak',
+    },
+    leakPage: {
+      eyebrow: 'Leak Analysis',
+      titleLine1: 'Reveal the quiet leak',
+      titleLine2: 'in your cash.',
+      description:
+        'A gentle, private estimate of how idle cash and inflation may be eroding your sense of safety.',
+      backLink: 'Back to home',
+      reassurance: 'Private by design. No data is stored without consent.',
+      footerNote:
+        'This estimate is directional only and meant to help you start a calmer, clearer money conversation.',
     },
     stickyFooter: {
       membershipLabel: 'Current Membership',
@@ -160,6 +187,7 @@ const translations: Record<Language, TranslationContent> = {
       bankPlaceholder: 'Select bank',
       bankLoading: 'Loading banks...',
       bankFallback: 'Showing default banks',
+      bankSupabase: 'Loaded from bank directory',
       amountLabel: 'Amount held',
       amountPlaceholder: 'Enter amount',
       amountHelper: 'We use this to estimate your leak.',
@@ -185,12 +213,14 @@ const translations: Record<Language, TranslationContent> = {
       philosophy: 'Unsere Philosophie',
       nudge: 'Der Impuls',
       safety: 'Sicherheit',
+      leak: 'Leak-Rechner',
     },
     hero: {
       titleLine1: 'Gibt dir dein Bankkonto',
       titleLine2: 'ein Gefühl von',
       titleEmphasis: 'Sicherheit?',
       scrollPrompt: 'Scrolle, um deine Reise zu beginnen',
+      buttonLabel: 'Dein Leck anzeigen',
     },
     philosophy: {
       line1PartBeforeHighlight: 'Die meisten Finanz-Apps konzentrieren sich auf ',
@@ -238,6 +268,18 @@ const translations: Record<Language, TranslationContent> = {
       headingLine2: 'Beziehung zu Geld zu verändern?',
       descriptionLine1: 'Schließe dich über 15.000 Frauen an, die neu definieren, was es bedeutet',
       descriptionLine2: 'finanziell abgesichert zu sein.',
+      buttonLabel: 'Dein Leck anzeigen',
+    },
+    leakPage: {
+      eyebrow: 'Leak-Analyse',
+      titleLine1: 'Finde das stille Leck',
+      titleLine2: 'in deinem Guthaben.',
+      description:
+        'Eine sanfte, private Schätzung, wie ungenutztes Geld und Inflation dein Sicherheitsgefühl schmälern könnten.',
+      backLink: 'Zurück zur Startseite',
+      reassurance: 'Privat by design. Keine Daten werden ohne Zustimmung gespeichert.',
+      footerNote:
+        'Diese Schätzung ist nur richtungsweisend und soll dir einen ruhigeren, klareren Startpunkt geben.',
     },
     stickyFooter: {
       membershipLabel: 'Aktuelle Mitgliedschaft',
@@ -249,6 +291,7 @@ const translations: Record<Language, TranslationContent> = {
       bankPlaceholder: 'Bank auswählen',
       bankLoading: 'Banken werden geladen...',
       bankFallback: 'Standardbanken werden angezeigt',
+      bankSupabase: 'Aus dem Bankenverzeichnis geladen',
       amountLabel: 'Guthaben',
       amountPlaceholder: 'Betrag eingeben',
       amountHelper: 'Wir nutzen das zur Schätzung deines Lecks.',
@@ -274,12 +317,14 @@ const translations: Record<Language, TranslationContent> = {
       philosophy: 'Nasza filozofia',
       nudge: 'Impuls',
       safety: 'Bezpieczeństwo',
+      leak: 'Kalkulator wycieku',
     },
     hero: {
       titleLine1: 'Czy Twoje konto bankowe',
       titleLine2: 'daje Ci poczucie',
       titleEmphasis: 'bezpieczeństwa?',
       scrollPrompt: 'Przewiń, aby rozpocząć swoją podróż',
+      buttonLabel: 'Pokaż swój wyciek',
     },
     philosophy: {
       line1PartBeforeHighlight: 'Większość aplikacji finansowych skupia się na ',
@@ -327,6 +372,18 @@ const translations: Record<Language, TranslationContent> = {
       headingLine2: 'relację z pieniędzmi?',
       descriptionLine1: 'Dołącz do ponad 15 000 kobiet, które na nowo definiują, co znaczy',
       descriptionLine2: 'być finansowo bezpieczną.',
+      buttonLabel: 'Pokaż swój wyciek',
+    },
+    leakPage: {
+      eyebrow: 'Analiza wycieku',
+      titleLine1: 'Odkryj cichy wyciek',
+      titleLine2: 'w swoich oszczędnościach.',
+      description:
+        'Delikatna, prywatna estymacja tego, jak niepracująca gotówka i inflacja mogą podkopywać Twoje poczucie bezpieczeństwa.',
+      backLink: 'Wróć na stronę główną',
+      reassurance: 'Prywatność przede wszystkim. Dane nie są zapisywane bez zgody.',
+      footerNote:
+        'To tylko orientacyjna estymacja, która ma pomóc Ci zacząć spokojniejszą rozmowę o finansach.',
     },
     stickyFooter: {
       membershipLabel: 'Obecne członkostwo',
@@ -338,6 +395,7 @@ const translations: Record<Language, TranslationContent> = {
       bankPlaceholder: 'Wybierz bank',
       bankLoading: 'Ładowanie banków...',
       bankFallback: 'Używamy domyślnych banków',
+      bankSupabase: 'Załadowano z katalogu banków',
       amountLabel: 'Posiadana kwota',
       amountPlaceholder: 'Wpisz kwotę',
       amountHelper: 'Używamy tego do oszacowania Twojego wycieku.',

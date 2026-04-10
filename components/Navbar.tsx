@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-const Navbar: React.FC = () => {
+const Navbar: React.FC<{ isLeakPage?: boolean }> = ({ isLeakPage = false }) => {
   const { language, setLanguage, messages, supportedLanguages } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -53,6 +53,7 @@ const Navbar: React.FC = () => {
   const navLinks = [
     { href: '#philosophy', label: messages.navbar.philosophy },
     { href: '#nudges', label: messages.navbar.nudge },
+    { href: '#/leak', label: messages.navbar.leak },
     { href: '#', label: messages.navbar.safety },
   ];
 
@@ -71,15 +72,20 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="hidden md:flex flex-1 justify-center space-x-10 text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="hover:text-primary hover:opacity-100 transition-all cursor-pointer"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = isLeakPage && link.href === '#/leak';
+            return (
+              <a
+                key={link.label}
+                href={link.href}
+                className={`transition-all cursor-pointer hover:text-primary hover:opacity-100 ${
+                  isActive ? 'text-primary opacity-100' : ''
+                }`}
+              >
+                {link.label}
+              </a>
+            );
+          })}
         </div>
 
         <div className="flex shrink-0 items-center gap-2.5 sm:gap-4">
@@ -182,16 +188,21 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-2 text-sm font-bold uppercase tracking-[0.14em] text-charcoal/80">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={closeMobileMenu}
-                className="rounded-lg px-3 py-2.5 transition-colors hover:bg-primary/10 hover:text-primary"
-              >
-                {link.label}
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = isLeakPage && link.href === '#/leak';
+              return (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  onClick={closeMobileMenu}
+                  className={`rounded-lg px-3 py-2.5 transition-colors hover:bg-primary/10 hover:text-primary ${
+                    isActive ? 'bg-primary/10 text-primary' : ''
+                  }`}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
           </div>
 
           <div className="mt-8 border-t border-primary/10 pt-6">
