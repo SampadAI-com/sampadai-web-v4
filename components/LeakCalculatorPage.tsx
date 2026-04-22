@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import LeakCalculator from './LeakCalculator';
+import SupportedBanks from './SupportedBanks';
 
 const LeakCalculatorPage: React.FC = () => {
   const { messages } = useLanguage();
@@ -31,6 +32,8 @@ const LeakCalculatorPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <SupportedBanks />
 
       <LeakCalculator />
 

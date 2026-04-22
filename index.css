@@ -10,6 +10,49 @@
   padding-left: 2.25rem !important;
 }
 
+/* ─── Bank Marquee ─── */
+.bank-marquee-shell {
+  position: relative;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent 0, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 10%, black 90%, transparent 100%);
+}
+
+.bank-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 0.9rem;
+  animation: bank-marquee 28s linear infinite;
+  will-change: transform;
+}
+
+.bank-marquee-track-reverse {
+  animation-direction: reverse;
+  animation-duration: 32s;
+}
+
+.bank-marquee-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 176px;
+  padding: 0.7rem 0.85rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(29, 201, 106, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 38px -32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+}
+
+@keyframes bank-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-50% - 0.45rem));
+  }
+}
+
 /* ─── Confetti ─── */
 .confetti-piece {
   position: absolute;
@@ -319,6 +362,17 @@
   opacity: 1;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .bank-marquee-track,
+  .confetti-piece,
+  .leak-orb,
+  .leak-slide-in,
+  .leak-line-draw {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 .leak-submit-btn:hover {
   transform: translateY(-2px) scale(1.01);
   box-shadow: 0 12px 32px rgba(29, 201, 106, 0.3), 0 4px 10px rgba(29, 201, 106, 0.2);
@@ -432,4 +486,11 @@
   to {
     stroke-dashoffset: 0;
   }
+}
+
+.alloc-desktop-row { display: none !important; }
+.alloc-mobile-row { display: block !important; }
+@media (min-width: 640px) {
+  .alloc-desktop-row { display: flex !important; }
+  .alloc-mobile-row { display: none !important; }
 }

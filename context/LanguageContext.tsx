@@ -58,6 +58,9 @@ type TranslationContent = {
     titleLine1: string;
     titleLine2: string;
     description: string;
+    supportedBanksEyebrow: string;
+    supportedBanksTitle: string;
+    supportedBanksDescription: string;
     backLink: string;
     reassurance: string;
     footerNote: string;
@@ -97,6 +100,7 @@ type TranslationContent = {
     criticalLeakStatus: string;
     yourRate: string;
     bestAvailable: string;
+    bestProtected: string;
     projectionTitle: string;
     bestLabel: string;
     yoursLabel: string;
@@ -113,6 +117,20 @@ type TranslationContent = {
     waitlistSuccess: string;
     insuranceNoteSafe: string;
     insuranceNoteOverLimit: string;
+    allocationTitle: string;
+    allocationDescription: string;
+    allocationCoverage: string;
+    allocationBanksUsed: string;
+    allocationBlend: string;
+    allocationAmount: string;
+    allocationInterest: string;
+    allocationRate: string;
+    allocationProductCap: string;
+    allocationBankCap: string;
+    allocationRemainderTitle: string;
+    allocationRemainderNote: string;
+    allocationProtectedNote: string;
+    allocationHiddenBanksNote: string;
   };
 };
 
@@ -195,6 +213,10 @@ const translations: Record<Language, TranslationContent> = {
       titleLine2: 'in your cash.',
       description:
         'A gentle, private estimate of how idle cash and inflation may be eroding your sense of safety.',
+      supportedBanksEyebrow: 'Supported Banks',
+      supportedBanksTitle: 'A focused, current mix across our live markets.',
+      supportedBanksDescription:
+        'We selected recognisable retail banks across Germany, Poland, Spain, and the United Kingdom so the experience stays concrete before the full directory loads.',
       backLink: 'Back to home',
       reassurance: 'Private by design. No data is stored without consent.',
       footerNote:
@@ -209,7 +231,7 @@ const translations: Record<Language, TranslationContent> = {
       bankLabel: 'Bank',
       bankPlaceholder: 'Select bank',
       bankLoading: 'Loading banks...',
-      bankFallback: 'Showing default banks',
+      bankFallback: 'Using curated bank set',
       bankSupabase: 'Loaded from bank directory',
       amountLabel: 'Amount held',
       amountPlaceholder: 'Enter amount',
@@ -236,6 +258,7 @@ const translations: Record<Language, TranslationContent> = {
       criticalLeakStatus: 'Critical',
       yourRate: 'Your rate:',
       bestAvailable: 'Best available:',
+      bestProtected: 'Best protected:',
       projectionTitle: '5-Year Growth Projection',
       bestLabel: 'Best',
       yoursLabel: 'Yours',
@@ -252,6 +275,22 @@ const translations: Record<Language, TranslationContent> = {
       waitlistSuccess: 'Added to waitlist!',
       insuranceNoteSafe: 'Your funds are within protected insurance limits.',
       insuranceNoteOverLimit: 'Money above {limit} {currency} in a single bank is not insured.',
+      allocationTitle: 'Suggested protected split',
+      allocationDescription:
+        'We spread your cash across the highest-yielding banks we can verify, while keeping each bank within its insured limit and each visible offer within its cap.',
+      allocationCoverage: 'Covered amount',
+      allocationBanksUsed: 'Banks used',
+      allocationBlend: 'Protected blend',
+      allocationAmount: 'Suggested amount',
+      allocationInterest: 'Est. yearly return',
+      allocationRate: 'Rate',
+      allocationProductCap: 'Offer cap',
+      allocationBankCap: 'Bank cap',
+      allocationRemainderTitle: 'More banks needed',
+      allocationRemainderNote:
+        '{amount} would still sit above the fully covered capacity visible in the current market feed.',
+      allocationProtectedNote: 'This full amount can stay within covered limits using the banks below.',
+      allocationHiddenBanksNote: '... and {count} more banks protecting your money',
     },
   },
   de: {
@@ -322,6 +361,10 @@ const translations: Record<Language, TranslationContent> = {
       titleLine2: 'in deinem Guthaben.',
       description:
         'Eine sanfte, private Schätzung, wie ungenutztes Geld und Inflation dein Sicherheitsgefühl schmälern könnten.',
+      supportedBanksEyebrow: 'Unterstützte Banken',
+      supportedBanksTitle: 'Eine fokussierte, aktuelle Auswahl in unseren aktiven Märkten.',
+      supportedBanksDescription:
+        'Wir haben bekannte Retail-Banken aus Deutschland, Polen, Spanien und dem Vereinigten Königreich ausgewählt, damit das Erlebnis greifbar bleibt, bevor das vollständige Verzeichnis geladen ist.',
       backLink: 'Zurück zur Startseite',
       reassurance: 'Privat by design. Keine Daten werden ohne Zustimmung gespeichert.',
       footerNote:
@@ -336,7 +379,7 @@ const translations: Record<Language, TranslationContent> = {
       bankLabel: 'Bank',
       bankPlaceholder: 'Bank auswählen',
       bankLoading: 'Banken werden geladen...',
-      bankFallback: 'Standardbanken werden angezeigt',
+      bankFallback: 'Kuratiertes Bankenset aktiv',
       bankSupabase: 'Aus dem Bankenverzeichnis geladen',
       amountLabel: 'Guthaben',
       amountPlaceholder: 'Betrag eingeben',
@@ -363,6 +406,7 @@ const translations: Record<Language, TranslationContent> = {
       criticalLeakStatus: 'Kritisch',
       yourRate: 'Dein Zins:',
       bestAvailable: 'Bester verfügbarer:',
+      bestProtected: 'Best geschützt:',
       projectionTitle: '5-Jahres-Wachstumsprognose',
       bestLabel: 'Bester',
       yoursLabel: 'Deiner',
@@ -379,6 +423,23 @@ const translations: Record<Language, TranslationContent> = {
       waitlistSuccess: 'Zur Warteliste hinzugefügt!',
       insuranceNoteSafe: 'Dein Guthaben liegt innerhalb der gesetzlichen Einlagensicherung.',
       insuranceNoteOverLimit: 'Geld über {limit} {currency} bei einer einzelnen Bank ist nicht abgesichert.',
+      allocationTitle: 'Empfohlene geschützte Verteilung',
+      allocationDescription:
+        'Wir verteilen dein Geld auf die besten verifizierten Zinsangebote, ohne die abgesicherte Grenze pro Bank oder die sichtbare Angebotsgrenze zu überschreiten.',
+      allocationCoverage: 'Abgedeckter Betrag',
+      allocationBanksUsed: 'Genutzte Banken',
+      allocationBlend: 'Geschützter Mix',
+      allocationAmount: 'Empfohlener Betrag',
+      allocationInterest: 'Geschätzter Jahresertrag',
+      allocationRate: 'Zins',
+      allocationProductCap: 'Angebotsgrenze',
+      allocationBankCap: 'Bankgrenze',
+      allocationRemainderTitle: 'Mehr Banken nötig',
+      allocationRemainderNote:
+        '{amount} lies still above the fully covered capacity visible in the current market feed.',
+      allocationProtectedNote:
+        'Dieser gesamte Betrag kann mit den unten gezeigten Banken innerhalb der abgesicherten Grenzen bleiben.',
+      allocationHiddenBanksNote: '... und {count} weitere Banken schützen dein Geld',
     },
   },
   pl: {
@@ -449,6 +510,10 @@ const translations: Record<Language, TranslationContent> = {
       titleLine2: 'w swoich oszczędnościach.',
       description:
         'Delikatna, prywatna estymacja tego, jak niepracująca gotówka i inflacja mogą podkopywać Twoje poczucie bezpieczeństwa.',
+      supportedBanksEyebrow: 'Obsługiwane banki',
+      supportedBanksTitle: 'Skupiony, aktualny zestaw dla naszych aktywnych rynków.',
+      supportedBanksDescription:
+        'Wybraliśmy rozpoznawalne banki detaliczne z Niemiec, Polski, Hiszpanii i Wielkiej Brytanii, aby doświadczenie było konkretne jeszcze przed załadowaniem pełnego katalogu.',
       backLink: 'Wróć na stronę główną',
       reassurance: 'Prywatność przede wszystkim. Dane nie są zapisywane bez zgody.',
       footerNote:
@@ -463,7 +528,7 @@ const translations: Record<Language, TranslationContent> = {
       bankLabel: 'Bank',
       bankPlaceholder: 'Wybierz bank',
       bankLoading: 'Ładowanie banków...',
-      bankFallback: 'Używamy domyślnych banków',
+      bankFallback: 'Korzystamy z wyselekcjonowanego zestawu banków',
       bankSupabase: 'Załadowano z katalogu banków',
       amountLabel: 'Posiadana kwota',
       amountPlaceholder: 'Wpisz kwotę',
@@ -490,6 +555,7 @@ const translations: Record<Language, TranslationContent> = {
       criticalLeakStatus: 'Krytyczny',
       yourRate: 'Twoje oproc.:',
       bestAvailable: 'Najlepsze dostępne:',
+      bestProtected: 'Najlepsze chronione:',
       projectionTitle: 'Prognoza wzrostu na 5 lat',
       bestLabel: 'Najlepszy',
       yoursLabel: 'Twój',
@@ -506,6 +572,23 @@ const translations: Record<Language, TranslationContent> = {
       waitlistSuccess: 'Dodano do listy!',
       insuranceNoteSafe: 'Twoje środki mieszczą się w limitach gwarantowanych.',
       insuranceNoteOverLimit: 'Pieniądze powyżej {limit} {currency} w jednym banku nie są ubezpieczone.',
+      allocationTitle: 'Sugerowany chroniony podział',
+      allocationDescription:
+        'Rozkładamy Twoją gotówkę między najwyżej oprocentowane banki, które możemy zweryfikować, bez przekraczania limitu ochrony na bank i widocznego limitu oferty.',
+      allocationCoverage: 'Kwota objęta ochroną',
+      allocationBanksUsed: 'Użyte banki',
+      allocationBlend: 'Chroniona średnia',
+      allocationAmount: 'Sugerowana kwota',
+      allocationInterest: 'Szacowany roczny zysk',
+      allocationRate: 'Oprocentowanie',
+      allocationProductCap: 'Limit oferty',
+      allocationBankCap: 'Limit banku',
+      allocationRemainderTitle: 'Potrzeba więcej banków',
+      allocationRemainderNote:
+        '{amount} nadal przekracza w pełni chronioną pojemność widoczną w aktualnym feedzie rynkowym.',
+      allocationProtectedNote:
+        'Cała ta kwota może pozostać w granicach ochrony przy użyciu poniższych banków.',
+      allocationHiddenBanksNote: '... i {count} więcej banków chroniących Twoje pieniądze',
     },
   },
 };
