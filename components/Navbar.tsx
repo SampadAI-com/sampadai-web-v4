@@ -60,7 +60,7 @@ const Navbar: React.FC<{ isLeakPage?: boolean }> = ({ isLeakPage = false }) => {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 border-b border-primary/5 bg-background-light/40 px-4 py-4 luxury-blur sm:gap-4 sm:p-6">
-        <div className="flex min-w-0 flex-1 items-center gap-2 md:flex-none">
+        <a href="/" className="flex min-w-0 flex-1 items-center gap-2 md:flex-none hover:opacity-80 transition-opacity">
           <img
             src="/assets/logo/sampadai.png"
             alt="SampadAI logo"
@@ -69,7 +69,7 @@ const Navbar: React.FC<{ isLeakPage?: boolean }> = ({ isLeakPage = false }) => {
           <span className="max-w-[11rem] truncate text-lg font-extrabold leading-none tracking-tight text-charcoal sm:text-xl md:max-w-none">
             SampadAI
           </span>
-        </div>
+        </a>
 
         <div className="hidden md:flex flex-1 justify-center space-x-10 text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
           {navLinks.map((link) => {
@@ -89,6 +89,15 @@ const Navbar: React.FC<{ isLeakPage?: boolean }> = ({ isLeakPage = false }) => {
         </div>
 
         <div className="flex shrink-0 items-center gap-2.5 sm:gap-4">
+          {!isLeakPage && (
+            <a
+              href="#/leak"
+              className="hidden lg:inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              {messages.hero.buttonLabel}
+            </a>
+          )}
+
           <div className="hidden sm:flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.16em] leading-none opacity-70 sm:tracking-[0.2em]">
             {supportedLanguages.map((code, index) => (
               <React.Fragment key={code}>
@@ -159,7 +168,7 @@ const Navbar: React.FC<{ isLeakPage?: boolean }> = ({ isLeakPage = false }) => {
           }`}
         >
           <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <a href="/" onClick={closeMobileMenu} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <img
                 src="/assets/logo/sampadai.png"
                 alt="SampadAI logo"
@@ -168,7 +177,7 @@ const Navbar: React.FC<{ isLeakPage?: boolean }> = ({ isLeakPage = false }) => {
               <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-charcoal/70">
                 Navigation
               </span>
-            </div>
+            </a>
             <button
               type="button"
               aria-label="Close navigation menu"
@@ -203,6 +212,15 @@ const Navbar: React.FC<{ isLeakPage?: boolean }> = ({ isLeakPage = false }) => {
                 </a>
               );
             })}
+            {!isLeakPage && (
+              <a
+                href="#/leak"
+                onClick={closeMobileMenu}
+                className="mt-2 flex items-center justify-center rounded-lg bg-primary px-3 py-3 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+              >
+                {messages.hero.buttonLabel}
+              </a>
+            )}
           </div>
 
           <div className="mt-8 border-t border-primary/10 pt-6">
