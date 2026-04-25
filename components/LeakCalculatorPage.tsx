@@ -11,9 +11,6 @@ const LeakCalculatorPage: React.FC = () => {
     <main className="pt-24 sm:pt-28 pb-16">
       <section className="px-6 sm:px-10 pb-4 sm:pb-6">
         <div className="mx-auto max-w-5xl text-center space-y-6">
-          <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-primary/60">
-            {leakPage.eyebrow}
-          </span>
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-light tracking-tight">
             {leakPage.titleLine1} <br className="hidden sm:block" /> {leakPage.titleLine2}
           </h1>
